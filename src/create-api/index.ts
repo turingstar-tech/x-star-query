@@ -42,11 +42,14 @@ const createApi: CreateApi = (config) => {
                 typeof definition.query === 'function'
                   ? definition.query(request)
                   : definition.query;
-              const config = typeof query === 'string' ? { url: query } : query;
-              const response = await instance.request(config);
-              return definition.transformResponse
-                ? definition.transformResponse(response)
-                : response;
+              const axiosConfig =
+                typeof query === 'string' ? { url: query } : query;
+              const { data } = await instance.request(axiosConfig);
+              return (
+                definition.transformResponse ??
+                config.transformResponse ??
+                ((data) => data)
+              )(data);
             },
             { ...options, onError: errorHandler },
           );

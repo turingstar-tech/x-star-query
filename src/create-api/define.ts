@@ -4,7 +4,7 @@ import type {
   Data,
 } from 'ahooks/es/useAntdTable/types';
 import type { Options, Result } from 'ahooks/es/useRequest/src/types';
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+import type { AxiosRequestConfig } from 'axios';
 
 /**
  * 基础接口定义
@@ -14,7 +14,7 @@ export interface BaseEndpointDefinition<Response = void, Request = void> {
   query:
     | (string | AxiosRequestConfig)
     | ((request: Request) => string | AxiosRequestConfig);
-  transformResponse?: (response: AxiosResponse) => Response;
+  transformResponse?: (data: any) => Response;
   errorHandlerParams?: any;
 }
 
@@ -106,6 +106,7 @@ export type EndpointDefinitions = Record<
  */
 export interface ApiConfig<Definitions extends EndpointDefinitions> {
   axiosConfig: AxiosRequestConfig;
+  transformResponse?: (data: any) => any;
   endpoints: (builder: EndpointDefinitionBuilder) => Definitions;
   useErrorHandler?: (params?: any) => (error: any) => void;
 }
