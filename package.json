@@ -43,6 +43,7 @@
     "axios": "^1.5.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.23.2",
     "@commitlint/cli": "^17.1.2",
     "@commitlint/config-conventional": "^17.1.0",
     "@types/react": "^18.0.0",
@@ -57,7 +58,9 @@
     "prettier-plugin-organize-imports": "^3.0.0",
     "prettier-plugin-packagejson": "^2.2.18",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "typescript": "^5.2.2",
+    "webpack": "^5.89.0"
   },
   "peerDependencies": {
     "react": ">=16.9.0",
