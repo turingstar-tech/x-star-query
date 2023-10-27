@@ -139,7 +139,7 @@ const createApi: CreateApi = (config) => {
               const { data } = await instance.request(axiosConfig);
               return transformResponse(data);
             },
-            { ...options, onError: errorHandler },
+            { manual: true, ...options, onError: errorHandler },
           );
         };
         return {
