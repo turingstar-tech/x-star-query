@@ -144,7 +144,7 @@ const createApi: CreateApi = (config) => {
         };
         return {
           ...api,
-          [`use${capitalizedName}Mutation`]: useEndpoint,
+          [`use${capitalizedName}Mutate`]: useEndpoint,
         };
       }
 
