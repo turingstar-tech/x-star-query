@@ -1,10 +1,11 @@
 import type {
   AntdTableOptions,
   AntdTableResult,
-  Data,
+  Data as TableData,
   Params as TableParams,
 } from 'ahooks/es/useAntdTable/types';
 import type {
+  Data as PaginationData,
   PaginationOptions,
   Params as PaginationParams,
   PaginationResult,
@@ -41,15 +42,15 @@ export type QueryEndpoint<Definition> =
   Definition extends QueryEndpointDefinition<infer Response, infer Request>
     ? (
         request: Request,
-        options?: Options<Response, never>,
-      ) => Result<Response, never>
+        options?: Options<Response, []>,
+      ) => Result<Response, []>
     : never;
 
 /**
  * 表格查询接口定义
  */
 export interface TableQueryEndpointDefinition<
-  Response extends Data,
+  Response extends TableData,
   Request,
   Params extends TableParams[0],
 > extends BaseEndpointDefinition<Response, Request, Params> {
@@ -75,7 +76,7 @@ export type TableQueryEndpoint<Definition> =
  * 分页查询接口定义
  */
 export interface PaginationQueryEndpointDefinition<
-  Response extends Data,
+  Response extends PaginationData,
   Request,
   Params extends PaginationParams[0],
 > extends BaseEndpointDefinition<Response, Request, Params> {
@@ -131,7 +132,11 @@ export interface EndpointDefinitionBuilder {
     definition: Omit<QueryEndpointDefinition<Response, Request>, 'type'>,
   ) => QueryEndpointDefinition<Response, Request>;
 
-  tableQuery: <Response extends Data, Request, Params extends TableParams[0]>(
+  tableQuery: <
+    Response extends TableData,
+    Request,
+    Params extends TableParams[0],
+  >(
     definition: Omit<
       TableQueryEndpointDefinition<Response, Request, Params>,
       'type'
@@ -139,7 +144,7 @@ export interface EndpointDefinitionBuilder {
   ) => TableQueryEndpointDefinition<Response, Request, Params>;
 
   paginationQuery: <
-    Response extends Data,
+    Response extends PaginationData,
     Request,
     Params extends PaginationParams[0],
   >(
@@ -172,7 +177,7 @@ export type EndpointDefinitions = Record<
  * API 配置
  */
 export interface ApiConfig<Definitions extends EndpointDefinitions> {
-  axiosConfig: AxiosRequestConfig;
+  axiosConfig?: AxiosRequestConfig;
   transformResponse?: (data: any) => any;
   endpoints: (builder: EndpointDefinitionBuilder) => Definitions;
   useErrorHandler?: (params?: any) => (error: any) => void;

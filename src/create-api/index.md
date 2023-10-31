@@ -14,7 +14,7 @@ const useErrorHandler = (params?: { path: string }) => {
 
 const { useListTopContestsQuery, useGetContestNameQuery } = createApi({
   /**
-   * 全局 Axios 配置
+   * 全局 axios 配置
    */
   axiosConfig: { baseURL: 'https://api.contest.xinyoudui.com/v1' },
 
@@ -35,7 +35,7 @@ const { useListTopContestsQuery, useGetContestNameQuery } = createApi({
 
     getContestName: builder.query<string, { id: number }>({
       /**
-       * 请求 Axios 配置
+       * 请求 axios 配置
        */
       query: (request) => ({ url: '/contest/detail', params: request }),
 

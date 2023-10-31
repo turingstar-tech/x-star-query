@@ -16,7 +16,7 @@ import type {
  */
 const createApi: CreateApi = (config) => {
   /**
-   * Axios 实例
+   * axios 实例
    */
   const instance = axios.create(config.axiosConfig);
 
@@ -139,7 +139,7 @@ const createApi: CreateApi = (config) => {
               const { data } = await instance.request(axiosConfig);
               return transformResponse(data);
             },
-            { manual: true, ...options, onError: errorHandler },
+            { ...options, manual: true, onError: errorHandler },
           );
         };
         return {
