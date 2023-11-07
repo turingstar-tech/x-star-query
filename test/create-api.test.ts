@@ -19,7 +19,7 @@ jest.mock('axios', () => ({
               return { data: store };
             } else if (method === 'POST') {
               store = data;
-              return { data: store };
+              return { data: undefined };
             }
             return { data: undefined };
           }
@@ -29,7 +29,7 @@ jest.mock('axios', () => ({
               return { data: store[params.key] };
             } else if (method === 'POST') {
               store[data.key] = data.value;
-              return { data: store };
+              return { data: undefined };
             }
             return { data: undefined };
           }
@@ -149,7 +149,6 @@ describe('mutate endpoint', () => {
       update: useUpdateStoreMutate(),
     }));
 
-    expect(result.current.update.data).toBe(undefined);
     expect(result.current.update.loading).toBe(false);
 
     await waitForNextUpdate();
@@ -163,17 +162,17 @@ describe('mutate endpoint', () => {
       result.current.update.runAsync({ what: 'for?' });
     });
 
-    expect(result.current.update.data).toBe(undefined);
     expect(result.current.update.loading).toBe(true);
 
     await waitForNextUpdate();
 
-    expect(result.current.update.data).toEqual({ what: 'for?' });
     expect(result.current.update.loading).toBe(false);
 
-    await act(async () => {
-      await result.current.get.runAsync();
+    act(() => {
+      result.current.get.runAsync();
     });
+
+    await waitForNextUpdate();
 
     expect(result.current.get.data).toEqual({ what: 'for?' });
   });

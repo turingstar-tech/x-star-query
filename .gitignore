@@ -1,4 +1,5 @@
 node_modules
+/coverage
 /dist
 .dumi/tmp
 .dumi/tmp-test
