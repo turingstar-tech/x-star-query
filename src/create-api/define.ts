@@ -21,7 +21,6 @@ export interface BaseEndpointDefinition<
   Request = void,
   Params = void,
 > {
-  type: string;
   query: string | ((request: Request, params: Params) => AxiosRequestConfig);
   transformResponse?: (data: any) => Response;
   errorHandlerParams?: any;
@@ -33,6 +32,9 @@ export interface BaseEndpointDefinition<
 export interface QueryEndpointDefinition<Response, Request = void>
   extends BaseEndpointDefinition<Response, Request> {
   type: 'query';
+  options?:
+    | Options<Response, []>
+    | ((request: Request) => Options<Response, []>);
 }
 
 /**
@@ -55,6 +57,9 @@ export interface TableQueryEndpointDefinition<
   Params extends TableParams[0],
 > extends BaseEndpointDefinition<Response, Request, Params> {
   type: 'tableQuery';
+  options?:
+    | AntdTableOptions<Response, [Params]>
+    | ((request: Request) => AntdTableOptions<Response, [Params]>);
 }
 
 /**
@@ -81,6 +86,9 @@ export interface PaginationQueryEndpointDefinition<
   Params extends PaginationParams[0],
 > extends BaseEndpointDefinition<Response, Request, Params> {
   type: 'paginationQuery';
+  options?:
+    | PaginationOptions<Response, [Params]>
+    | ((request: Request) => PaginationOptions<Response, [Params]>);
 }
 
 /**
@@ -107,6 +115,9 @@ export interface MutateEndpointDefinition<
   Params = void,
 > extends BaseEndpointDefinition<Response, Request, Params> {
   type: 'mutate';
+  options?:
+    | Options<Response, [Params]>
+    | ((request: Request) => Options<Response, [Params]>);
 }
 
 /**

@@ -66,13 +66,16 @@ describe('query endpoint', () => {
     const { useGetStoreKeyQuery } = createApi({
       endpoints: (builder) => ({
         getStoreKey: builder.query<object, { key: string }>({
-          query: '/store/key',
+          query: ({ key }) => ({ url: '/store/key', params: { key } }),
+          options: ({ key }) => ({
+            refreshDeps: [key],
+          }),
         }),
       }),
     });
 
     const { result, rerender, waitForNextUpdate } = renderHook(
-      ({ key }) => useGetStoreKeyQuery({ key }, { refreshDeps: [key] }),
+      ({ key }) => useGetStoreKeyQuery({ key }),
       { initialProps: { key: 'hello' } },
     );
 
@@ -96,15 +99,16 @@ describe('query endpoint', () => {
   });
 
   test('query error', async () => {
+    const transformResponse = jest.fn((data) => {
+      if (data === undefined) {
+        throw new Error('not found');
+      }
+      return data;
+    });
     const errorHandler = jest.fn();
 
     const { useThrowErrorQuery } = createApi({
-      transformResponse: (data) => {
-        if (data === undefined) {
-          throw new Error('not found');
-        }
-        return data;
-      },
+      transformResponse,
       endpoints: (builder) => ({
         throwError: builder.query<object>({ query: '/error' }),
       }),
@@ -115,12 +119,15 @@ describe('query endpoint', () => {
       useThrowErrorQuery(),
     );
 
+    expect(transformResponse).toBeCalledTimes(0);
     expect(errorHandler).toBeCalledTimes(0);
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
     await waitForNextUpdate();
 
+    expect(transformResponse).toBeCalledTimes(1);
+    expect(transformResponse.mock.calls[0][0]).toBe(undefined);
     expect(errorHandler).toBeCalledTimes(1);
     expect(errorHandler.mock.calls[0][0]).toEqual(new Error('not found'));
     expect(result.current.error).toEqual(new Error('not found'));
@@ -170,6 +177,4 @@ describe('mutate endpoint', () => {
 
     expect(result.current.get.data).toEqual({ what: 'for?' });
   });
-
-  test('mutate with data', async () => {});
 });

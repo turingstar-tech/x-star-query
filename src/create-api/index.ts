@@ -53,13 +53,19 @@ const createApi: CreateApi = (config) => {
           return useRequest(
             async () => {
               const axiosConfig =
-                typeof definition.query === 'string'
-                  ? { url: definition.query, params: request }
-                  : definition.query(request);
+                typeof definition.query === 'function'
+                  ? definition.query(request)
+                  : { url: definition.query, params: request };
               const { data } = await instance.request(axiosConfig);
               return transformResponse(data);
             },
-            { ...options, onError: errorHandler },
+            {
+              ...(typeof definition.options === 'function'
+                ? definition.options(request)
+                : definition.options),
+              ...options,
+              onError: errorHandler,
+            },
           );
         };
 
@@ -78,13 +84,22 @@ const createApi: CreateApi = (config) => {
           return useAntdTable(
             async (params) => {
               const axiosConfig =
-                typeof definition.query === 'string'
-                  ? { url: definition.query, params: { ...request, ...params } }
-                  : definition.query(request, params);
+                typeof definition.query === 'function'
+                  ? definition.query(request, params)
+                  : {
+                      url: definition.query,
+                      params: { ...request, ...params },
+                    };
               const { data } = await instance.request(axiosConfig);
               return transformResponse(data);
             },
-            { ...options, onError: errorHandler },
+            {
+              ...(typeof definition.options === 'function'
+                ? definition.options(request)
+                : definition.options),
+              ...options,
+              onError: errorHandler,
+            },
           );
         };
         return { ...api, [`use${capitalizedName}TableQuery`]: useEndpoint };
@@ -102,13 +117,22 @@ const createApi: CreateApi = (config) => {
           return usePagination(
             async (params) => {
               const axiosConfig =
-                typeof definition.query === 'string'
-                  ? { url: definition.query, params: { ...request, ...params } }
-                  : definition.query(request, params);
+                typeof definition.query === 'function'
+                  ? definition.query(request, params)
+                  : {
+                      url: definition.query,
+                      params: { ...request, ...params },
+                    };
               const { data } = await instance.request(axiosConfig);
               return transformResponse(data);
             },
-            { ...options, onError: errorHandler },
+            {
+              ...(typeof definition.options === 'function'
+                ? definition.options(request)
+                : definition.options),
+              ...options,
+              onError: errorHandler,
+            },
           );
         };
         return {
@@ -129,17 +153,24 @@ const createApi: CreateApi = (config) => {
           return useRequest(
             async (params) => {
               const axiosConfig =
-                typeof definition.query === 'string'
-                  ? {
+                typeof definition.query === 'function'
+                  ? definition.query(request, params)
+                  : {
                       url: definition.query,
                       method: 'POST',
                       data: { ...request, ...params },
-                    }
-                  : definition.query(request, params);
+                    };
               const { data } = await instance.request(axiosConfig);
               return transformResponse(data);
             },
-            { ...options, manual: true, onError: errorHandler },
+            {
+              ...(typeof definition.options === 'function'
+                ? definition.options(request)
+                : definition.options),
+              ...options,
+              manual: true,
+              onError: errorHandler,
+            },
           );
         };
         return {
