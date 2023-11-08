@@ -47,10 +47,23 @@ jest.mock('axios', () => ({
 
           case '/list': {
             if (method === 'GET') {
+              let result = list;
+              if (params.filters) {
+                result = result.filter((item) =>
+                  params.filters.id.includes(item.id),
+                );
+              }
+              if (
+                params.sorter &&
+                params.sorter.field === 'id' &&
+                params.sorter.order === 'descend'
+              ) {
+                result = result.sort((a, b) => b.id - a.id);
+              }
               return {
                 data: {
-                  total: list.length,
-                  list: list.slice(
+                  total: result.length,
+                  list: result.slice(
                     (params.current - 1) * params.pageSize,
                     params.current * params.pageSize,
                   ),
@@ -88,21 +101,23 @@ describe('query endpoint', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  test('query with params', async () => {
-    const query = jest.fn(({ key }) => ({
+  test('query with refresh deps', async () => {
+    const query = jest.fn((request) => ({
       url: '/store/key',
-      params: { key },
+      params: request,
     }));
-    const options = jest.fn(({ key }) => ({ refreshDeps: [key] }));
+    const options = jest.fn<(request: any) => any>((request) => ({
+      refreshDeps: [request.key],
+    }));
 
     const { useGetStoreKeyQuery } = createApi({
       endpoints: (builder) => ({
-        getStoreKey: builder.query<object, { key: string }>({ query, options }),
+        getStoreKey: builder.query<string, { key: string }>({ query, options }),
       }),
     });
 
     const { result, rerender, waitForNextUpdate } = renderHook(
-      ({ key }) => useGetStoreKeyQuery({ key }),
+      (props) => useGetStoreKeyQuery(props),
       { initialProps: { key: 'hello' } },
     );
 
@@ -141,7 +156,7 @@ describe('query endpoint', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  test('query error', async () => {
+  test('query with error', async () => {
     const transformResponse = jest.fn((data) => {
       if (data === undefined) {
         throw new Error('not found');
@@ -154,7 +169,7 @@ describe('query endpoint', () => {
     const { useThrowErrorQuery } = createApi({
       transformResponse,
       endpoints: (builder) => ({
-        throwError: builder.query<object>({
+        throwError: builder.query<void>({
           query: { url: '/error' },
           errorHandlerParams: 'params',
         }),
@@ -262,6 +277,135 @@ describe('table query endpoint', () => {
       pagination: { current: 7, pageSize: 16, total: 100 },
     });
   });
+
+  test('table query with filters', async () => {
+    const { useGetListTableQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.tableQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { current: number; pageSize: number }
+        >({ query: (_, params) => ({ url: '/list', params }) }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListTableQuery(),
+    );
+
+    await waitForNextUpdate();
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+
+    const id = [
+      26, 190, 29, 80, 106, 52, 39, 74, 126, 194, 86, 72, 86, 159, 22, 73, 54,
+      60, 95, 8,
+    ];
+
+    act(() => {
+      result.current.tableProps.onChange({ current: 2, pageSize: 8 }, { id });
+    });
+
+    await waitForNextUpdate();
+
+    const list = Object.values(
+      id
+        .filter((id) => id < 100)
+        .reduce((prev, curr) => ({ ...prev, [curr]: curr }), {}),
+    ).map((id) => ({ id }));
+
+    expect(result.current.data).toEqual({
+      total: list.length,
+      list: list.slice(8, 16),
+    });
+  });
+
+  test('table query with sorter', async () => {
+    const { useGetListTableQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.tableQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { current: number; pageSize: number }
+        >({ query: '/list' }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListTableQuery(),
+    );
+
+    await waitForNextUpdate();
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+
+    act(() => {
+      result.current.tableProps.onChange(
+        { current: 2, pageSize: 8 },
+        undefined,
+        { field: 'id', order: 'descend' },
+      );
+    });
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 8 }).map((_, id) => ({ id: 91 - id })),
+    });
+  });
+
+  test('table query with polling interval', async () => {
+    const { useGetListTableQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.tableQuery<
+          { total: number; list: { id: number }[] },
+          number,
+          { current: number; pageSize: number }
+        >({
+          query: { url: '/list', params: { current: 1, pageSize: 10 } },
+          options: (request) => ({ pollingInterval: request }),
+        }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListTableQuery(100),
+    );
+
+    await waitForNextUpdate();
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+    expect(result.current.loading).toBe(false);
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+    expect(result.current.loading).toBe(true);
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+    expect(result.current.loading).toBe(false);
+  });
 });
 
 describe('pagination query endpoint', () => {
@@ -333,6 +477,75 @@ describe('pagination query endpoint', () => {
       totalPage: 7,
     });
   });
+
+  test('pagination query with default params', async () => {
+    const { useGetListPaginationQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.paginationQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { current: number; pageSize: number }
+        >({
+          query: (_, params) => ({ url: '/list', params }),
+          options: { defaultParams: [{ current: 2, pageSize: 8 }] },
+        }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListPaginationQuery(),
+    );
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 8 }).map((_, id) => ({ id: id + 8 })),
+    });
+  });
+
+  test('pagination query with polling interval', async () => {
+    const { useGetListPaginationQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.paginationQuery<
+          { total: number; list: { id: number }[] },
+          number,
+          { current: number; pageSize: number }
+        >({
+          query: { url: '/list', params: { current: 1, pageSize: 10 } },
+          options: (request) => ({ pollingInterval: request }),
+        }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListPaginationQuery(100),
+    );
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+    expect(result.current.loading).toBe(false);
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+    expect(result.current.loading).toBe(true);
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+    expect(result.current.loading).toBe(false);
+  });
 });
 
 describe('mutate endpoint', () => {
@@ -340,7 +553,7 @@ describe('mutate endpoint', () => {
     const { useGetStoreQuery, useUpdateStoreMutate } = createApi({
       endpoints: (builder) => ({
         getStore: builder.query<object>({ query: '/store' }),
-        updateStore: builder.mutate<object, void, object>({ query: '/store' }),
+        updateStore: builder.mutate<void, void, object>({ query: '/store' }),
       }),
     });
 
@@ -375,6 +588,91 @@ describe('mutate endpoint', () => {
     await waitForNextUpdate();
 
     expect(result.current.get.data).toEqual({ what: 'for?' });
+  });
+
+  test('mutate with params', async () => {
+    const { useGetStoreKeyQuery, useUpdateStoreKeyMutate } = createApi({
+      endpoints: (builder) => ({
+        getStoreKey: builder.query<string, { key: string }>({
+          query: '/store/key',
+        }),
+        updateStoreKey: builder.mutate<
+          void,
+          void,
+          { key: string; value: string }
+        >({
+          query: (_, params) => ({
+            url: '/store/key',
+            method: 'POST',
+            data: params,
+          }),
+        }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() => ({
+      get: useGetStoreKeyQuery({ key: 'good' }),
+      update: useUpdateStoreKeyMutate(),
+    }));
+
+    expect(result.current.update.loading).toBe(false);
+
+    await waitForNextUpdate();
+
+    expect(result.current.get.data).toBe('night.');
+
+    act(() => {
+      result.current.update.runAsync({ key: 'good', value: 'morning.' });
+    });
+
+    expect(result.current.update.loading).toBe(true);
+
+    await waitForNextUpdate();
+
+    expect(result.current.update.loading).toBe(false);
+
+    act(() => {
+      result.current.get.runAsync();
+    });
+
+    await waitForNextUpdate();
+
+    expect(result.current.get.data).toBe('morning.');
+  });
+
+  test('mutate with polling interval', async () => {
+    const { useDeleteStoreMutate } = createApi({
+      endpoints: (builder) => ({
+        deleteStore: builder.mutate<void, number>({
+          query: { url: '/store', method: 'POST', data: {} },
+          options: (request) => ({ pollingInterval: request }),
+        }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useDeleteStoreMutate(100),
+    );
+
+    expect(result.current.loading).toBe(false);
+
+    act(() => {
+      result.current.runAsync();
+    });
+
+    expect(result.current.loading).toBe(true);
+
+    await waitForNextUpdate();
+
+    expect(result.current.loading).toBe(false);
+
+    await waitForNextUpdate();
+
+    expect(result.current.loading).toBe(true);
+
+    await waitForNextUpdate();
+
+    expect(result.current.loading).toBe(false);
   });
 });
 
