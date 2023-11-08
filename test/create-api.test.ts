@@ -3,6 +3,8 @@ import { act, renderHook } from '@testing-library/react-hooks';
 import type { AxiosRequestConfig } from 'axios';
 import { createApi } from '../src';
 
+jest.useFakeTimers();
+
 // 模拟 axios 实例
 jest.mock('axios', () => ({
   create: () => {
@@ -20,7 +22,7 @@ jest.mock('axios', () => ({
       }: AxiosRequestConfig) => {
         // 模拟服务器延迟
         await new Promise((resolve) => {
-          setTimeout(resolve, 50);
+          setTimeout(resolve, 500);
         });
 
         // 模拟路由
@@ -95,6 +97,7 @@ describe('query endpoint', () => {
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({ hello: 'world!', good: 'night.' });
@@ -121,37 +124,39 @@ describe('query endpoint', () => {
       { initialProps: { key: 'hello' } },
     );
 
-    expect(query).toBeCalledTimes(1);
-    expect(query.mock.calls[0][0]).toEqual({ key: 'hello' });
-    expect(options).toBeCalledTimes(2);
-    expect(options.mock.calls[0][0]).toEqual({ key: 'hello' });
-    expect(options.mock.calls[1][0]).toEqual({ key: 'hello' });
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenNthCalledWith(1, { key: 'hello' });
+    expect(options).toHaveBeenCalledTimes(2);
+    expect(options).toHaveBeenNthCalledWith(1, { key: 'hello' });
+    expect(options).toHaveBeenNthCalledWith(2, { key: 'hello' });
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
-    expect(query).toBeCalledTimes(1);
-    expect(options).toBeCalledTimes(3);
-    expect(options.mock.calls[2][0]).toEqual({ key: 'hello' });
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(options).toHaveBeenCalledTimes(3);
+    expect(options).toHaveBeenNthCalledWith(3, { key: 'hello' });
     expect(result.current.data).toBe('world!');
     expect(result.current.loading).toBe(false);
 
     rerender({ key: 'good' });
 
-    expect(query).toBeCalledTimes(2);
-    expect(query.mock.calls[1][0]).toEqual({ key: 'good' });
-    expect(options).toBeCalledTimes(5);
-    expect(options.mock.calls[3][0]).toEqual({ key: 'good' });
-    expect(options.mock.calls[4][0]).toEqual({ key: 'good' });
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(query).toHaveBeenNthCalledWith(2, { key: 'good' });
+    expect(options).toHaveBeenCalledTimes(5);
+    expect(options).toHaveBeenNthCalledWith(4, { key: 'good' });
+    expect(options).toHaveBeenNthCalledWith(5, { key: 'good' });
     expect(result.current.data).toBe('world!');
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
-    expect(query).toBeCalledTimes(2);
-    expect(options).toBeCalledTimes(6);
-    expect(options.mock.calls[5][0]).toEqual({ key: 'good' });
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(options).toHaveBeenCalledTimes(6);
+    expect(options).toHaveBeenNthCalledWith(6, { key: 'good' });
     expect(result.current.data).toBe('night.');
     expect(result.current.loading).toBe(false);
   });
@@ -164,14 +169,14 @@ describe('query endpoint', () => {
       return data;
     });
     const errorHandler = jest.fn();
-    const useErrorHandler = jest.fn<(params: any) => any>(() => errorHandler);
+    const useErrorHandler = jest.fn(() => errorHandler);
 
     const { useThrowErrorQuery } = createApi({
       transformResponse,
       endpoints: (builder) => ({
         throwError: builder.query<void>({
           query: { url: '/error' },
-          errorHandlerParams: 'params',
+          errorHandlerParams: { type: 'default' },
         }),
       }),
       useErrorHandler,
@@ -181,22 +186,23 @@ describe('query endpoint', () => {
       useThrowErrorQuery(),
     );
 
-    expect(transformResponse).toBeCalledTimes(0);
-    expect(errorHandler).toBeCalledTimes(0);
-    expect(useErrorHandler).toBeCalledTimes(2);
-    expect(useErrorHandler.mock.calls[0][0]).toBe('params');
-    expect(useErrorHandler.mock.calls[1][0]).toBe('params');
+    expect(transformResponse).toHaveBeenCalledTimes(0);
+    expect(errorHandler).toHaveBeenCalledTimes(0);
+    expect(useErrorHandler).toHaveBeenCalledTimes(2);
+    expect(useErrorHandler).toHaveBeenNthCalledWith(1, { type: 'default' });
+    expect(useErrorHandler).toHaveBeenNthCalledWith(2, { type: 'default' });
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
-    expect(transformResponse).toBeCalledTimes(1);
-    expect(transformResponse.mock.calls[0][0]).toBe(undefined);
-    expect(errorHandler).toBeCalledTimes(1);
-    expect(errorHandler.mock.calls[0][0]).toEqual(new Error('not found'));
-    expect(useErrorHandler).toBeCalledTimes(3);
-    expect(useErrorHandler.mock.calls[2][0]).toBe('params');
+    expect(transformResponse).toHaveBeenCalledTimes(1);
+    expect(transformResponse).toHaveBeenNthCalledWith(1, undefined);
+    expect(errorHandler).toHaveBeenCalledTimes(1);
+    expect(errorHandler).toHaveBeenNthCalledWith(1, new Error('not found'), []);
+    expect(useErrorHandler).toHaveBeenCalledTimes(3);
+    expect(useErrorHandler).toHaveBeenNthCalledWith(3, { type: 'default' });
     expect(result.current.error).toEqual(new Error('not found'));
     expect(result.current.loading).toBe(false);
   });
@@ -226,6 +232,7 @@ describe('table query endpoint', () => {
       pagination: { current: 1, pageSize: 10, total: 0 },
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toBe(undefined);
@@ -236,6 +243,7 @@ describe('table query endpoint', () => {
       pagination: { current: 1, pageSize: 10, total: 0 },
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -264,6 +272,7 @@ describe('table query endpoint', () => {
       pagination: { current: 7, pageSize: 16, total: 100 },
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -293,7 +302,9 @@ describe('table query endpoint', () => {
       useGetListTableQuery(),
     );
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -310,6 +321,7 @@ describe('table query endpoint', () => {
       result.current.tableProps.onChange({ current: 2, pageSize: 8 }, { id });
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     const list = Object.values(
@@ -339,7 +351,9 @@ describe('table query endpoint', () => {
       useGetListTableQuery(),
     );
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -355,6 +369,7 @@ describe('table query endpoint', () => {
       );
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -378,10 +393,12 @@ describe('table query endpoint', () => {
     });
 
     const { result, waitForNextUpdate } = renderHook(() =>
-      useGetListTableQuery(100),
+      useGetListTableQuery(3000),
     );
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -390,7 +407,9 @@ describe('table query endpoint', () => {
     });
     expect(result.current.loading).toBe(false);
 
-    await waitForNextUpdate();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
 
     expect(result.current.data).toEqual({
       total: 100,
@@ -398,6 +417,7 @@ describe('table query endpoint', () => {
     });
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -433,6 +453,7 @@ describe('pagination query endpoint', () => {
       totalPage: 0,
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -463,6 +484,7 @@ describe('pagination query endpoint', () => {
       totalPage: 7,
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -496,6 +518,7 @@ describe('pagination query endpoint', () => {
       useGetListPaginationQuery(),
     );
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -519,9 +542,10 @@ describe('pagination query endpoint', () => {
     });
 
     const { result, waitForNextUpdate } = renderHook(() =>
-      useGetListPaginationQuery(100),
+      useGetListPaginationQuery(3000),
     );
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -530,7 +554,9 @@ describe('pagination query endpoint', () => {
     });
     expect(result.current.loading).toBe(false);
 
-    await waitForNextUpdate();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
 
     expect(result.current.data).toEqual({
       total: 100,
@@ -538,6 +564,7 @@ describe('pagination query endpoint', () => {
     });
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -564,6 +591,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(false);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.get.data).toEqual({
@@ -577,6 +605,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.update.loading).toBe(false);
@@ -585,6 +614,7 @@ describe('mutate endpoint', () => {
       result.current.get.runAsync();
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.get.data).toEqual({ what: 'for?' });
@@ -617,6 +647,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(false);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.get.data).toBe('night.');
@@ -627,6 +658,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.update.loading).toBe(false);
@@ -635,6 +667,7 @@ describe('mutate endpoint', () => {
       result.current.get.runAsync();
     });
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.get.data).toBe('morning.');
@@ -651,7 +684,7 @@ describe('mutate endpoint', () => {
     });
 
     const { result, waitForNextUpdate } = renderHook(() =>
-      useDeleteStoreMutate(100),
+      useDeleteStoreMutate(3000),
     );
 
     expect(result.current.loading).toBe(false);
@@ -662,14 +695,18 @@ describe('mutate endpoint', () => {
 
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.loading).toBe(false);
 
-    await waitForNextUpdate();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
 
     expect(result.current.loading).toBe(true);
 
+    jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
     expect(result.current.loading).toBe(false);
