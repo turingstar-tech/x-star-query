@@ -47,10 +47,23 @@ jest.mock('axios', () => ({
 
           case '/list': {
             if (method === 'GET') {
+              let result = list;
+              if (params.filters) {
+                result = result.filter(({ id }) =>
+                  params.filters.id.includes(id),
+                );
+              }
+              if (
+                params.sorter &&
+                params.sorter.field === 'id' &&
+                params.sorter.order === 'descend'
+              ) {
+                result = result.sort((a, b) => b.id - a.id);
+              }
               return {
                 data: {
-                  total: list.length,
-                  list: list.slice(
+                  total: result.length,
+                  list: result.slice(
                     (params.current - 1) * params.pageSize,
                     params.current * params.pageSize,
                   ),
@@ -260,6 +273,91 @@ describe('table query endpoint', () => {
       dataSource: Array.from({ length: 4 }).map((_, id) => ({ id: id + 96 })),
       loading: false,
       pagination: { current: 7, pageSize: 16, total: 100 },
+    });
+  });
+
+  test('table query with filter', async () => {
+    const { useGetListTableQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.tableQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { current: number; pageSize: number }
+        >({ query: (_, params) => ({ url: '/list', params }) }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListTableQuery(),
+    );
+
+    await waitForNextUpdate();
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+
+    const id = [
+      26, 190, 29, 80, 106, 52, 39, 74, 126, 194, 86, 72, 86, 159, 22, 73, 54,
+      60, 95, 8,
+    ];
+
+    act(() => {
+      result.current.tableProps.onChange({ current: 2, pageSize: 8 }, { id });
+    });
+
+    await waitForNextUpdate();
+
+    const list = Object.values(
+      id
+        .filter((id) => id < 100)
+        .reduce((prev, curr) => ({ ...prev, [curr]: curr }), {}),
+    ).map((id) => ({ id }));
+
+    expect(result.current.data).toEqual({
+      total: list.length,
+      list: list.slice(8, 16),
+    });
+  });
+
+  test('table query with sorter', async () => {
+    const { useGetListTableQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.tableQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { current: number; pageSize: number; filter: any }
+        >({ query: '/list' }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListTableQuery(),
+    );
+
+    await waitForNextUpdate();
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 10 }).map((_, id) => ({ id })),
+    });
+
+    act(() => {
+      result.current.tableProps.onChange(
+        { current: 2, pageSize: 8 },
+        undefined,
+        { field: 'id', order: 'descend' },
+      );
+    });
+
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 100,
+      list: Array.from({ length: 8 }).map((_, id) => ({ id: 91 - id })),
     });
   });
 });
