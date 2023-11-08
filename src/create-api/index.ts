@@ -9,6 +9,14 @@ import type {
 } from './define';
 
 /**
+ * 将字符串首字母大写
+ *
+ * @param str 字符串
+ * @returns 首字母大写后的字符串
+ */
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+/**
  * 创建 API
  *
  * @param config API 配置
@@ -34,7 +42,8 @@ const createApi: CreateApi = (config) => {
   });
 
   return Object.entries(endpoints).reduce<any>((api, [name, definition]) => {
-    const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
+    const hookName = `use${capitalize(name)}${capitalize(definition.type)}`;
+
     const transformResponse =
       definition.transformResponse ??
       config.transformResponse ??
@@ -55,6 +64,8 @@ const createApi: CreateApi = (config) => {
               const axiosConfig =
                 typeof definition.query === 'function'
                   ? definition.query(request)
+                  : typeof definition.query === 'object'
+                  ? definition.query
                   : { url: definition.query, params: request };
               const { data } = await instance.request(axiosConfig);
               return transformResponse(data);
@@ -69,7 +80,7 @@ const createApi: CreateApi = (config) => {
           );
         };
 
-        return { ...api, [`use${capitalizedName}Query`]: useEndpoint };
+        return { ...api, [hookName]: useEndpoint };
       }
 
       case 'tableQuery': {
@@ -86,6 +97,8 @@ const createApi: CreateApi = (config) => {
               const axiosConfig =
                 typeof definition.query === 'function'
                   ? definition.query(request, params)
+                  : typeof definition.query === 'object'
+                  ? definition.query
                   : {
                       url: definition.query,
                       params: { ...request, ...params },
@@ -102,7 +115,8 @@ const createApi: CreateApi = (config) => {
             },
           );
         };
-        return { ...api, [`use${capitalizedName}TableQuery`]: useEndpoint };
+
+        return { ...api, [hookName]: useEndpoint };
       }
 
       case 'paginationQuery': {
@@ -119,6 +133,8 @@ const createApi: CreateApi = (config) => {
               const axiosConfig =
                 typeof definition.query === 'function'
                   ? definition.query(request, params)
+                  : typeof definition.query === 'object'
+                  ? definition.query
                   : {
                       url: definition.query,
                       params: { ...request, ...params },
@@ -135,10 +151,8 @@ const createApi: CreateApi = (config) => {
             },
           );
         };
-        return {
-          ...api,
-          [`use${capitalizedName}PaginationQuery`]: useEndpoint,
-        };
+
+        return { ...api, [hookName]: useEndpoint };
       }
 
       case 'mutate': {
@@ -155,6 +169,8 @@ const createApi: CreateApi = (config) => {
               const axiosConfig =
                 typeof definition.query === 'function'
                   ? definition.query(request, params)
+                  : typeof definition.query === 'object'
+                  ? definition.query
                   : {
                       url: definition.query,
                       method: 'POST',
@@ -173,15 +189,12 @@ const createApi: CreateApi = (config) => {
             },
           );
         };
-        return {
-          ...api,
-          [`use${capitalizedName}Mutate`]: useEndpoint,
-        };
+
+        return { ...api, [hookName]: useEndpoint };
       }
 
       default: {
-        const _: never = definition;
-        return _;
+        return api;
       }
     }
   }, {});

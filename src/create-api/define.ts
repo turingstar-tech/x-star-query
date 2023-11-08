@@ -21,7 +21,10 @@ export interface BaseEndpointDefinition<
   Request = void,
   Params = void,
 > {
-  query: string | ((request: Request, params: Params) => AxiosRequestConfig);
+  query:
+    | string
+    | AxiosRequestConfig
+    | ((request: Request, params: Params) => AxiosRequestConfig);
   transformResponse?: (data: any) => Response;
   errorHandlerParams?: any;
 }
