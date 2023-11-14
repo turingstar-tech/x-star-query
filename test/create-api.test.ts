@@ -94,12 +94,14 @@ describe('query endpoint', () => {
 
     const { result, waitForNextUpdate } = renderHook(() => useGetStoreQuery());
 
+    // 初始无数据，正在加载
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 请求成功有数据，加载完成
     expect(result.current.data).toEqual({ hello: 'world!', good: 'night.' });
     expect(result.current.loading).toBe(false);
   });
@@ -124,11 +126,15 @@ describe('query endpoint', () => {
       { initialProps: { key: 'hello' } },
     );
 
+    // 请求函数调用 1 次，即请求发送 1 次
     expect(query).toHaveBeenCalledTimes(1);
     expect(query).toHaveBeenNthCalledWith(1, { key: 'hello' });
+
+    // 选项函数调用 2 次，即组件渲染 2 次
     expect(options).toHaveBeenCalledTimes(2);
     expect(options).toHaveBeenNthCalledWith(1, { key: 'hello' });
     expect(options).toHaveBeenNthCalledWith(2, { key: 'hello' });
+
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
@@ -136,18 +142,27 @@ describe('query endpoint', () => {
     await waitForNextUpdate();
 
     expect(query).toHaveBeenCalledTimes(1);
+
+    // 选项函数又调用 1 次，即组件又渲染 1 次
     expect(options).toHaveBeenCalledTimes(3);
     expect(options).toHaveBeenNthCalledWith(3, { key: 'hello' });
+
+    // 请求成功有数据
     expect(result.current.data).toBe('world!');
     expect(result.current.loading).toBe(false);
 
+    // 用新属性渲染
     rerender({ key: 'good' });
 
+    // 请求函数又调用 1 次，即请求又发送 1 次
     expect(query).toHaveBeenCalledTimes(2);
     expect(query).toHaveBeenNthCalledWith(2, { key: 'good' });
+
+    // 选项函数又调用 2 次，即组件又渲染 2 次
     expect(options).toHaveBeenCalledTimes(5);
     expect(options).toHaveBeenNthCalledWith(4, { key: 'good' });
     expect(options).toHaveBeenNthCalledWith(5, { key: 'good' });
+
     expect(result.current.data).toBe('world!');
     expect(result.current.loading).toBe(true);
 
@@ -155,8 +170,12 @@ describe('query endpoint', () => {
     await waitForNextUpdate();
 
     expect(query).toHaveBeenCalledTimes(2);
+
+    // 选项函数又调用 1 次，即组件又渲染 1 次
     expect(options).toHaveBeenCalledTimes(6);
     expect(options).toHaveBeenNthCalledWith(6, { key: 'good' });
+
+    // 请求成功有新数据
     expect(result.current.data).toBe('night.');
     expect(result.current.loading).toBe(false);
   });
@@ -187,22 +206,34 @@ describe('query endpoint', () => {
     );
 
     expect(transformResponse).toHaveBeenCalledTimes(0);
+
     expect(errorHandler).toHaveBeenCalledTimes(0);
+
+    // 错误处理钩子调用 2 次，即组件渲染 2 次
     expect(useErrorHandler).toHaveBeenCalledTimes(2);
     expect(useErrorHandler).toHaveBeenNthCalledWith(1, { type: 'default' });
     expect(useErrorHandler).toHaveBeenNthCalledWith(2, { type: 'default' });
+
+    // 初始无错误
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 响应转换函数调用 1 次，即请求响应 1 次
     expect(transformResponse).toHaveBeenCalledTimes(1);
     expect(transformResponse).toHaveBeenNthCalledWith(1, undefined);
+
+    // 错误处理函数调用 1 次，即请求失败 1 次
     expect(errorHandler).toHaveBeenCalledTimes(1);
     expect(errorHandler).toHaveBeenNthCalledWith(1, new Error('not found'), []);
+
+    // 错误处理钩子又调用 1 次，即组件又渲染 1 次
     expect(useErrorHandler).toHaveBeenCalledTimes(3);
     expect(useErrorHandler).toHaveBeenNthCalledWith(3, { type: 'default' });
+
+    // 请求失败有错误
     expect(result.current.error).toEqual(new Error('not found'));
     expect(result.current.loading).toBe(false);
   });
@@ -224,6 +255,7 @@ describe('table query endpoint', () => {
       useGetListTableQuery(),
     );
 
+    // 初始表格属性
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(false);
     expect(result.current.tableProps).toMatchObject({
@@ -235,6 +267,7 @@ describe('table query endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 表格请求在第 2 次渲染时才开始加载
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
     expect(result.current.tableProps).toMatchObject({
@@ -246,6 +279,7 @@ describe('table query endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 请求成功有数据
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 10 }).map((_, id) => ({ id })),
@@ -257,6 +291,7 @@ describe('table query endpoint', () => {
       pagination: { current: 1, pageSize: 10, total: 100 },
     });
 
+    // 修改分页参数
     act(() => {
       result.current.tableProps.onChange({ current: 7, pageSize: 16 });
     });
@@ -275,6 +310,7 @@ describe('table query endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 请求成功有新数据
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 4 }).map((_, id) => ({ id: id + 96 })),
@@ -317,6 +353,7 @@ describe('table query endpoint', () => {
       60, 95, 8,
     ];
 
+    // 修改分页和筛选参数
     act(() => {
       result.current.tableProps.onChange({ current: 2, pageSize: 8 }, { id });
     });
@@ -330,6 +367,7 @@ describe('table query endpoint', () => {
         .reduce((prev, curr) => ({ ...prev, [curr]: curr }), {}),
     ).map((id) => ({ id }));
 
+    // 请求成功有新数据
     expect(result.current.data).toEqual({
       total: list.length,
       list: list.slice(8, 16),
@@ -361,6 +399,7 @@ describe('table query endpoint', () => {
       list: Array.from({ length: 10 }).map((_, id) => ({ id })),
     });
 
+    // 修改分页和排序参数
     act(() => {
       result.current.tableProps.onChange(
         { current: 2, pageSize: 8 },
@@ -372,6 +411,7 @@ describe('table query endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 请求成功有新数据
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 8 }).map((_, id) => ({ id: 91 - id })),
@@ -411,6 +451,7 @@ describe('table query endpoint', () => {
       jest.runOnlyPendingTimers();
     });
 
+    // 轮询加载
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 10 }).map((_, id) => ({ id })),
@@ -444,6 +485,7 @@ describe('pagination query endpoint', () => {
       useGetListPaginationQuery(),
     );
 
+    // 初始分页属性
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
     expect(result.current.pagination).toMatchObject({
@@ -456,6 +498,7 @@ describe('pagination query endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 请求成功有数据
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 10 }).map((_, id) => ({ id })),
@@ -468,6 +511,7 @@ describe('pagination query endpoint', () => {
       totalPage: 10,
     });
 
+    // 修改分页参数
     act(() => {
       result.current.pagination.onChange(7, 16);
     });
@@ -487,6 +531,7 @@ describe('pagination query endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 请求成功有新数据
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 4 }).map((_, id) => ({ id: id + 96 })),
@@ -521,6 +566,7 @@ describe('pagination query endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 请求成功有数据
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 8 }).map((_, id) => ({ id: id + 8 })),
@@ -558,6 +604,7 @@ describe('pagination query endpoint', () => {
       jest.runOnlyPendingTimers();
     });
 
+    // 轮询加载
     expect(result.current.data).toEqual({
       total: 100,
       list: Array.from({ length: 10 }).map((_, id) => ({ id })),
@@ -589,16 +636,19 @@ describe('mutate endpoint', () => {
       update: useUpdateStoreMutate(),
     }));
 
+    // 初始不发送修改请求
     expect(result.current.update.loading).toBe(false);
 
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 查询请求成功有数据
     expect(result.current.get.data).toEqual({
       hello: 'world!',
       good: 'night.',
     });
 
+    // 发送修改请求
     act(() => {
       result.current.update.runAsync({ what: 'for?' });
     });
@@ -610,6 +660,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(false);
 
+    // 发送查询请求
     act(() => {
       result.current.get.runAsync();
     });
@@ -617,6 +668,7 @@ describe('mutate endpoint', () => {
     jest.runOnlyPendingTimers();
     await waitForNextUpdate();
 
+    // 查询请求成功有新数据
     expect(result.current.get.data).toEqual({ what: 'for?' });
   });
 
@@ -689,10 +741,12 @@ describe('mutate endpoint', () => {
 
     expect(result.current.loading).toBe(false);
 
+    // 开始轮询
     act(() => {
       result.current.runAsync();
     });
 
+    // 首次加载
     expect(result.current.loading).toBe(true);
 
     jest.runOnlyPendingTimers();
@@ -704,6 +758,7 @@ describe('mutate endpoint', () => {
       jest.runOnlyPendingTimers();
     });
 
+    // 轮询加载
     expect(result.current.loading).toBe(true);
 
     jest.runOnlyPendingTimers();
@@ -721,6 +776,7 @@ describe('unknown endpoint', () => {
       }),
     });
 
+    // 忽略未知请求
     expect(api).toEqual({});
   });
 });
