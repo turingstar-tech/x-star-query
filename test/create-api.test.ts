@@ -725,6 +725,130 @@ describe('mutate endpoint', () => {
     expect(result.current.get.data).toBe('morning.');
   });
 
+  test('auto refresh and mutate', async () => {
+    const { useGetStoreQuery, useUpdateStoreMutate, useUpdateErrorMutate } =
+      createApi({
+        endpoints: (builder) => ({
+          getStore: builder.query<object>({ query: '/store' }),
+          updateStore: builder.mutate<void, void, object>({ query: '/store' }),
+          updateError: builder.mutate<void, void, object>({
+            query: '/error',
+            transformResponse: (data) => {
+              if (data === undefined) {
+                throw new Error('not found');
+              }
+              return data;
+            },
+          }),
+        }),
+      });
+
+    const { result, waitForNextUpdate } = renderHook(() => {
+      const get = useGetStoreQuery();
+      const update = useUpdateStoreMutate(undefined, {
+        autoRefresh: get.refresh,
+        autoMutate: get.mutate,
+      });
+      const error = useUpdateErrorMutate(undefined, {
+        autoRefresh: get.refresh,
+        autoMutate: get.mutate,
+      });
+      return {
+        get,
+        update,
+        error,
+      };
+    });
+
+    // 查询初始无数据
+    expect(result.current.get.data).toBe(undefined);
+    expect(result.current.get.loading).toBe(true);
+
+    jest.runOnlyPendingTimers();
+    await waitForNextUpdate();
+
+    // 查询请求成功有数据
+    expect(result.current.get.data).toEqual({
+      hello: 'world!',
+      good: 'night.',
+    });
+    expect(result.current.get.loading).toBe(false);
+
+    // 发送修改请求
+    act(() => {
+      result.current.update.runAsync({ what: 'for?' });
+    });
+
+    // 查询请求自动修改
+    expect(result.current.get.data).toEqual({ what: 'for?' });
+    expect(result.current.get.loading).toBe(false);
+
+    jest.runOnlyPendingTimers();
+    await waitForNextUpdate();
+
+    // 查询请求自动刷新
+    expect(result.current.get.data).toEqual({ what: 'for?' });
+    expect(result.current.get.loading).toBe(true);
+
+    jest.runOnlyPendingTimers();
+    await waitForNextUpdate();
+
+    // 查询请求成功有新数据
+    expect(result.current.get.data).toEqual({ what: 'for?' });
+    expect(result.current.get.loading).toBe(false);
+
+    const errorHandler = jest.fn();
+
+    // 发送错误请求
+    act(() => {
+      result.current.error.runAsync({ move: 'forward!' }).catch(errorHandler);
+    });
+
+    // 查询请求自动修改
+    expect(result.current.get.data).toEqual({ move: 'forward!' });
+    expect(result.current.get.loading).toBe(false);
+
+    jest.runOnlyPendingTimers();
+    await waitForNextUpdate();
+
+    // 查询请求自动修改回原数据，自动刷新
+    expect(result.current.get.data).toEqual({ what: 'for?' });
+    expect(result.current.get.loading).toBe(true);
+    expect(errorHandler).toHaveBeenCalledTimes(1);
+
+    jest.runOnlyPendingTimers();
+    await waitForNextUpdate();
+
+    // 查询请求成功有原数据
+    expect(result.current.get.data).toEqual({ what: 'for?' });
+    expect(result.current.get.loading).toBe(false);
+
+    // 同时发送错误请求和修改请求
+    act(() => {
+      result.current.error.runAsync({ go: 'ahead.' }).catch(errorHandler);
+      result.current.update.runAsync({ just: 'sleep?' });
+    });
+
+    // 查询请求自动修改
+    expect(result.current.get.data).toEqual({ just: 'sleep?' });
+    expect(result.current.get.loading).toBe(false);
+
+    jest.runOnlyPendingTimers();
+    await waitForNextUpdate();
+
+    // 查询请求自动刷新
+    expect(result.current.get.data).toEqual({ just: 'sleep?' });
+    expect(result.current.get.loading).toBe(true);
+    expect(errorHandler).toHaveBeenCalledTimes(2);
+
+    jest.runOnlyPendingTimers();
+    await waitForNextUpdate();
+
+    // 查询请求成功有新数据
+    expect(result.current.get.data).toEqual({ just: 'sleep?' });
+    expect(result.current.get.loading).toBe(false);
+  });
+
   test('mutate with polling interval', async () => {
     const { useDeleteStoreMutate } = createApi({
       endpoints: (builder) => ({

@@ -55,29 +55,24 @@ const createApi: CreateApi = (config) => {
           request,
           options,
         ) => {
-          const errorHandler = config.useErrorHandler?.(
-            definition.errorHandlerParams,
-          );
+          const finalOptions = {
+            ...(typeof definition.options === 'function'
+              ? definition.options(request)
+              : definition.options),
+            ...options,
+            onError: config.useErrorHandler?.(definition.errorHandlerParams),
+          };
 
-          return useRequest(
-            async () => {
-              const axiosConfig =
-                typeof definition.query === 'function'
-                  ? definition.query(request)
-                  : typeof definition.query === 'object'
-                  ? definition.query
-                  : { url: definition.query, params: request };
-              const { data } = await instance.request(axiosConfig);
-              return transformResponse(data);
-            },
-            {
-              ...(typeof definition.options === 'function'
-                ? definition.options(request)
-                : definition.options),
-              ...options,
-              onError: errorHandler,
-            },
-          );
+          return useRequest(async () => {
+            const axiosConfig =
+              typeof definition.query === 'function'
+                ? definition.query(request)
+                : typeof definition.query === 'object'
+                ? definition.query
+                : { url: definition.query, params: request };
+            const { data } = await instance.request(axiosConfig);
+            return transformResponse(data);
+          }, finalOptions);
         };
 
         return { ...api, [hookName]: useEndpoint };
@@ -88,32 +83,27 @@ const createApi: CreateApi = (config) => {
           request,
           options,
         ) => {
-          const errorHandler = config.useErrorHandler?.(
-            definition.errorHandlerParams,
-          );
+          const finalOptions = {
+            ...(typeof definition.options === 'function'
+              ? definition.options(request)
+              : definition.options),
+            ...options,
+            onError: config.useErrorHandler?.(definition.errorHandlerParams),
+          };
 
-          return useAntdTable(
-            async (params) => {
-              const axiosConfig =
-                typeof definition.query === 'function'
-                  ? definition.query(request, params)
-                  : typeof definition.query === 'object'
-                  ? definition.query
-                  : {
-                      url: definition.query,
-                      params: { ...request, ...params },
-                    };
-              const { data } = await instance.request(axiosConfig);
-              return transformResponse(data);
-            },
-            {
-              ...(typeof definition.options === 'function'
-                ? definition.options(request)
-                : definition.options),
-              ...options,
-              onError: errorHandler,
-            },
-          );
+          return useAntdTable(async (params) => {
+            const axiosConfig =
+              typeof definition.query === 'function'
+                ? definition.query(request, params)
+                : typeof definition.query === 'object'
+                ? definition.query
+                : {
+                    url: definition.query,
+                    params: { ...request, ...params },
+                  };
+            const { data } = await instance.request(axiosConfig);
+            return transformResponse(data);
+          }, finalOptions);
         };
 
         return { ...api, [hookName]: useEndpoint };
@@ -124,32 +114,27 @@ const createApi: CreateApi = (config) => {
           request,
           options,
         ) => {
-          const errorHandler = config.useErrorHandler?.(
-            definition.errorHandlerParams,
-          );
+          const finalOptions = {
+            ...(typeof definition.options === 'function'
+              ? definition.options(request)
+              : definition.options),
+            ...options,
+            onError: config.useErrorHandler?.(definition.errorHandlerParams),
+          };
 
-          return usePagination(
-            async (params) => {
-              const axiosConfig =
-                typeof definition.query === 'function'
-                  ? definition.query(request, params)
-                  : typeof definition.query === 'object'
-                  ? definition.query
-                  : {
-                      url: definition.query,
-                      params: { ...request, ...params },
-                    };
-              const { data } = await instance.request(axiosConfig);
-              return transformResponse(data);
-            },
-            {
-              ...(typeof definition.options === 'function'
-                ? definition.options(request)
-                : definition.options),
-              ...options,
-              onError: errorHandler,
-            },
-          );
+          return usePagination(async (params) => {
+            const axiosConfig =
+              typeof definition.query === 'function'
+                ? definition.query(request, params)
+                : typeof definition.query === 'object'
+                ? definition.query
+                : {
+                    url: definition.query,
+                    params: { ...request, ...params },
+                  };
+            const { data } = await instance.request(axiosConfig);
+            return transformResponse(data);
+          }, finalOptions);
         };
 
         return { ...api, [hookName]: useEndpoint };
@@ -160,34 +145,49 @@ const createApi: CreateApi = (config) => {
           request,
           options,
         ) => {
-          const errorHandler = config.useErrorHandler?.(
-            definition.errorHandlerParams,
-          );
+          const finalOptions = {
+            ...(typeof definition.options === 'function'
+              ? definition.options(request)
+              : definition.options),
+            ...options,
+            manual: true,
+            onError: config.useErrorHandler?.(definition.errorHandlerParams),
+          };
 
-          return useRequest(
-            async (params) => {
-              const axiosConfig =
-                typeof definition.query === 'function'
-                  ? definition.query(request, params)
-                  : typeof definition.query === 'object'
-                  ? definition.query
-                  : {
-                      url: definition.query,
-                      method: 'POST',
-                      data: { ...request, ...params },
-                    };
-              const { data } = await instance.request(axiosConfig);
-              return transformResponse(data);
+          const result = useRequest(async (params) => {
+            const axiosConfig =
+              typeof definition.query === 'function'
+                ? definition.query(request, params)
+                : typeof definition.query === 'object'
+                ? definition.query
+                : {
+                    url: definition.query,
+                    method: 'POST',
+                    data: { ...request, ...params },
+                  };
+            const { data } = await instance.request(axiosConfig);
+            return transformResponse(data);
+          }, finalOptions);
+
+          return {
+            ...result,
+            runAsync: async (params) => {
+              let data: any;
+              finalOptions.autoMutate?.(
+                (oldData) => ((data = oldData), params),
+              );
+              try {
+                return await result.runAsync(params);
+              } catch (error) {
+                finalOptions.autoMutate?.((oldData) =>
+                  oldData === params ? data : oldData,
+                );
+                throw error;
+              } finally {
+                finalOptions.autoRefresh?.();
+              }
             },
-            {
-              ...(typeof definition.options === 'function'
-                ? definition.options(request)
-                : definition.options),
-              ...options,
-              manual: true,
-              onError: errorHandler,
-            },
-          );
+          };
         };
 
         return { ...api, [hookName]: useEndpoint };
