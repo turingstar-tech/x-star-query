@@ -106,7 +106,7 @@ describe('query endpoint', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  test('query with refresh deps', async () => {
+  test('refresh deps', async () => {
     const query = jest.fn((request) => ({
       url: '/store/key',
       params: request,
@@ -180,7 +180,7 @@ describe('query endpoint', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  test('query with error', async () => {
+  test('error handler', async () => {
     const transformResponse = jest.fn((data) => {
       if (data === undefined) {
         throw new Error('not found');
@@ -323,7 +323,7 @@ describe('table query endpoint', () => {
     });
   });
 
-  test('table query with filters', async () => {
+  test('filters', async () => {
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.tableQuery<
@@ -374,7 +374,7 @@ describe('table query endpoint', () => {
     });
   });
 
-  test('table query with sorter', async () => {
+  test('sorter', async () => {
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.tableQuery<
@@ -418,7 +418,7 @@ describe('table query endpoint', () => {
     });
   });
 
-  test('table query with polling interval', async () => {
+  test('polling interval', async () => {
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.tableQuery<
@@ -545,7 +545,7 @@ describe('pagination query endpoint', () => {
     });
   });
 
-  test('pagination query with default params', async () => {
+  test('default params', async () => {
     const { useGetListPaginationQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.paginationQuery<
@@ -573,7 +573,7 @@ describe('pagination query endpoint', () => {
     });
   });
 
-  test('pagination query with polling interval', async () => {
+  test('polling interval', async () => {
     const { useGetListPaginationQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.paginationQuery<
@@ -672,7 +672,7 @@ describe('mutate endpoint', () => {
     expect(result.current.get.data).toEqual({ what: 'for?' });
   });
 
-  test('mutate with params', async () => {
+  test('params', async () => {
     const { useGetStoreKeyQuery, useUpdateStoreKeyMutate } = createApi({
       endpoints: (builder) => ({
         getStoreKey: builder.query<string, { key: string }>({
@@ -849,7 +849,7 @@ describe('mutate endpoint', () => {
     expect(result.current.get.loading).toBe(false);
   });
 
-  test('mutate with polling interval', async () => {
+  test('polling interval', async () => {
     const { useDeleteStoreMutate } = createApi({
       endpoints: (builder) => ({
         deleteStore: builder.mutate<void, number>({
