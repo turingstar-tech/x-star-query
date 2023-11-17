@@ -172,15 +172,13 @@ const createApi: CreateApi = (config) => {
           return {
             ...result,
             runAsync: async (params) => {
-              let data: any;
-              finalOptions.autoMutate?.(
-                (oldData) => ((data = oldData), params),
-              );
+              let oldData: any;
+              finalOptions.autoMutate?.((data) => ((oldData = data), params));
               try {
                 return await result.runAsync(params);
               } catch (error) {
-                finalOptions.autoMutate?.((oldData) =>
-                  oldData === params ? data : oldData,
+                finalOptions.autoMutate?.((data) =>
+                  data === params ? oldData : data,
                 );
                 throw error;
               } finally {
