@@ -12,5 +12,5 @@
       "x-star-query/*": ["src/*", "*"]
     }
   },
-  "include": [".dumirc.ts", "src/**/*"]
+  "include": [".dumirc.ts", "src/**/*", "test/**/*"]
 }

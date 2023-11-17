@@ -9,7 +9,7 @@ jest.useFakeTimers();
 jest.mock('axios', () => ({
   create: () => {
     // 模拟服务器数据
-    let store = { hello: 'world!', good: 'night.' };
+    let store: Record<string, string> = { hello: 'world!', good: 'night.' };
     let list = Array.from({ length: 100 }).map((_, id) => ({ id }));
 
     return {
