@@ -3,10 +3,12 @@
   "version": "0.0.1",
   "description": "A react query library developed by turingstar",
   "license": "MIT",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "lib/index.js",
+  "module": "es/index.js",
+  "types": "es/index.d.ts",
   "files": [
-    "dist"
+    "es",
+    "lib"
   ],
   "scripts": {
     "build": "father build",
