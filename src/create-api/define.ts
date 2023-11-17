@@ -114,7 +114,7 @@ export type MutateOptions<TData, TParams extends any[]> = Options<
   TParams
 > & {
   autoRefresh?: () => void;
-  autoMutate?: (data: (oldData?: TParams[0]) => TParams[0] | undefined) => void;
+  autoMutate?: (updater: (data?: TParams[0]) => TParams[0] | undefined) => void;
 };
 
 /**
