@@ -109,6 +109,14 @@ export type PaginationQueryEndpoint<Definition> =
       ) => PaginationResult<Response, [Params]>
     : never;
 
+export type MutateOptions<TData, TParams extends any[]> = Options<
+  TData,
+  TParams
+> & {
+  autoRefresh?: () => void;
+  autoMutate?: (data: (oldData?: TParams[0]) => TParams[0] | undefined) => void;
+};
+
 /**
  * 修改接口定义
  */
@@ -119,8 +127,8 @@ export interface MutateEndpointDefinition<
 > extends BaseEndpointDefinition<Response, Request, Params> {
   type: 'mutate';
   options?:
-    | Options<Response, [Params]>
-    | ((request: Request) => Options<Response, [Params]>);
+    | MutateOptions<Response, [Params]>
+    | ((request: Request) => MutateOptions<Response, [Params]>);
 }
 
 /**
@@ -134,7 +142,7 @@ export type MutateEndpoint<Definition> =
   >
     ? (
         request: Request,
-        options?: Options<Response, [Params]>,
+        options?: MutateOptions<Response, [Params]>,
       ) => Result<Response, [Params]>
     : never;
 
