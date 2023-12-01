@@ -44,11 +44,6 @@ const createApi: CreateApi = (config) => {
   return Object.entries(endpoints).reduce<any>((api, [name, definition]) => {
     const hookName = `use${capitalize(name)}${capitalize(definition.type)}`;
 
-    const transformResponse =
-      definition.transformResponse ??
-      config.transformResponse ??
-      ((data) => data);
-
     switch (definition.type) {
       case 'query': {
         const useEndpoint: QueryEndpoint<typeof definition> = (
@@ -63,6 +58,11 @@ const createApi: CreateApi = (config) => {
             onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
 
+          const transformResponse =
+            finalOptions.transformResponse ??
+            config.transformResponse ??
+            ((data) => data);
+
           return useRequest(async () => {
             const axiosConfig =
               typeof definition.query === 'function'
@@ -71,7 +71,7 @@ const createApi: CreateApi = (config) => {
                 ? definition.query
                 : { url: definition.query, params: request };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data);
+            return transformResponse(data, request);
           }, finalOptions);
         };
 
@@ -91,6 +91,11 @@ const createApi: CreateApi = (config) => {
             onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
 
+          const transformResponse =
+            finalOptions.transformResponse ??
+            config.transformResponse ??
+            ((data) => data);
+
           return useAntdTable(async (params) => {
             const axiosConfig =
               typeof definition.query === 'function'
@@ -102,7 +107,7 @@ const createApi: CreateApi = (config) => {
                     params: { ...request, ...params },
                   };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data);
+            return transformResponse(data, request, params);
           }, finalOptions);
         };
 
@@ -122,6 +127,11 @@ const createApi: CreateApi = (config) => {
             onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
 
+          const transformResponse =
+            finalOptions.transformResponse ??
+            config.transformResponse ??
+            ((data) => data);
+
           return usePagination(async (params) => {
             const axiosConfig =
               typeof definition.query === 'function'
@@ -133,7 +143,7 @@ const createApi: CreateApi = (config) => {
                     params: { ...request, ...params },
                   };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data);
+            return transformResponse(data, request, params);
           }, finalOptions);
         };
 
@@ -154,6 +164,11 @@ const createApi: CreateApi = (config) => {
             onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
 
+          const transformResponse =
+            finalOptions.transformResponse ??
+            config.transformResponse ??
+            ((data) => data);
+
           const result = useRequest(async (params) => {
             const axiosConfig =
               typeof definition.query === 'function'
@@ -166,7 +181,7 @@ const createApi: CreateApi = (config) => {
                     data: { ...request, ...params },
                   };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data);
+            return transformResponse(data, request, params);
           }, finalOptions);
 
           return {
