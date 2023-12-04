@@ -14,30 +14,44 @@ import type { Options, Result } from 'ahooks/es/useRequest/src/types';
 import type { AxiosRequestConfig } from 'axios';
 
 /**
- * 基础接口定义
+ * 响应转换函数
  */
-export interface BaseEndpointDefinition<
+export interface TransformResponse<
   Response = void,
   Request = void,
   Params = void,
 > {
+  (data: any, request: Request, params: Params): Response;
+}
+
+/**
+ * 基础接口定义
+ */
+export interface BaseEndpointDefinition<Request = void, Params = void> {
   query:
     | string
     | AxiosRequestConfig
     | ((request: Request, params: Params) => AxiosRequestConfig);
-  transformResponse?: (data: any) => Response;
   errorHandlerParams?: any;
+}
+
+/**
+ * 查询接口选项
+ */
+export interface QueryOptions<Response, Request = void>
+  extends Options<Response, []> {
+  transformResponse?: TransformResponse<Response, Request>;
 }
 
 /**
  * 查询接口定义
  */
 export interface QueryEndpointDefinition<Response, Request = void>
-  extends BaseEndpointDefinition<Response, Request> {
+  extends BaseEndpointDefinition<Request> {
   type: 'query';
   options?:
-    | Options<Response, []>
-    | ((request: Request) => Options<Response, []>);
+    | QueryOptions<Response, Request>
+    | ((request: Request) => QueryOptions<Response, Request>);
 }
 
 /**
@@ -47,9 +61,20 @@ export type QueryEndpoint<Definition> =
   Definition extends QueryEndpointDefinition<infer Response, infer Request>
     ? (
         request: Request,
-        options?: Options<Response, []>,
+        options?: QueryOptions<Response, Request>,
       ) => Result<Response, []>
     : never;
+
+/**
+ * 表格查询接口选项
+ */
+export interface TableQueryOptions<
+  Response extends TableData,
+  Request,
+  Params extends TableParams[0],
+> extends AntdTableOptions<Response, [Params]> {
+  transformResponse?: TransformResponse<Response, Request, Params>;
+}
 
 /**
  * 表格查询接口定义
@@ -58,11 +83,11 @@ export interface TableQueryEndpointDefinition<
   Response extends TableData,
   Request,
   Params extends TableParams[0],
-> extends BaseEndpointDefinition<Response, Request, Params> {
+> extends BaseEndpointDefinition<Request, Params> {
   type: 'tableQuery';
   options?:
-    | AntdTableOptions<Response, [Params]>
-    | ((request: Request) => AntdTableOptions<Response, [Params]>);
+    | TableQueryOptions<Response, Request, Params>
+    | ((request: Request) => TableQueryOptions<Response, Request, Params>);
 }
 
 /**
@@ -76,9 +101,20 @@ export type TableQueryEndpoint<Definition> =
   >
     ? (
         request: Request,
-        options?: AntdTableOptions<Response, [Params]>,
+        options?: TableQueryOptions<Response, Request, Params>,
       ) => AntdTableResult<Response, [Params]>
     : never;
+
+/**
+ * 分页查询接口选项
+ */
+export interface PaginationQueryOptions<
+  Response extends PaginationData,
+  Request,
+  Params extends PaginationParams[0],
+> extends PaginationOptions<Response, [Params]> {
+  transformResponse?: TransformResponse<Response, Request, Params>;
+}
 
 /**
  * 分页查询接口定义
@@ -87,11 +123,11 @@ export interface PaginationQueryEndpointDefinition<
   Response extends PaginationData,
   Request,
   Params extends PaginationParams[0],
-> extends BaseEndpointDefinition<Response, Request, Params> {
+> extends BaseEndpointDefinition<Request, Params> {
   type: 'paginationQuery';
   options?:
-    | PaginationOptions<Response, [Params]>
-    | ((request: Request) => PaginationOptions<Response, [Params]>);
+    | PaginationQueryOptions<Response, Request, Params>
+    | ((request: Request) => PaginationQueryOptions<Response, Request, Params>);
 }
 
 /**
@@ -105,17 +141,19 @@ export type PaginationQueryEndpoint<Definition> =
   >
     ? (
         request: Request,
-        options?: PaginationOptions<Response, [Params]>,
+        options?: PaginationQueryOptions<Response, Request, Params>,
       ) => PaginationResult<Response, [Params]>
     : never;
 
-export type MutateOptions<TData, TParams extends any[]> = Options<
-  TData,
-  TParams
-> & {
+/**
+ * 修改接口选项
+ */
+export interface MutateOptions<Response = void, Request = void, Params = void>
+  extends Options<Response, [Params]> {
+  transformResponse?: TransformResponse<Response, Request, Params>;
   autoRefresh?: () => void;
-  autoMutate?: (updater: (data?: TParams[0]) => TParams[0] | undefined) => void;
-};
+  autoMutate?: (updater: (data?: Params) => Params | undefined) => void;
+}
 
 /**
  * 修改接口定义
@@ -124,11 +162,11 @@ export interface MutateEndpointDefinition<
   Response = void,
   Request = void,
   Params = void,
-> extends BaseEndpointDefinition<Response, Request, Params> {
+> extends BaseEndpointDefinition<Request, Params> {
   type: 'mutate';
   options?:
-    | MutateOptions<Response, [Params]>
-    | ((request: Request) => MutateOptions<Response, [Params]>);
+    | MutateOptions<Response, Request, Params>
+    | ((request: Request) => MutateOptions<Response, Request, Params>);
 }
 
 /**
@@ -142,7 +180,7 @@ export type MutateEndpoint<Definition> =
   >
     ? (
         request: Request,
-        options?: MutateOptions<Response, [Params]>,
+        options?: MutateOptions<Response, Request, Params>,
       ) => Result<Response, [Params]>
     : never;
 
@@ -200,7 +238,7 @@ export type EndpointDefinitions = Record<
  */
 export interface ApiConfig<Definitions extends EndpointDefinitions> {
   axiosConfig?: AxiosRequestConfig;
-  transformResponse?: (data: any) => any;
+  transformResponse?: TransformResponse<any, any, any>;
   endpoints: (builder: EndpointDefinitionBuilder) => Definitions;
   useErrorHandler?: (params?: any) => (error: any) => void;
 }

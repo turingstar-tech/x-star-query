@@ -223,7 +223,7 @@ describe('query endpoint', () => {
 
     // 响应转换函数调用 1 次，即请求响应 1 次
     expect(transformResponse).toHaveBeenCalledTimes(1);
-    expect(transformResponse).toHaveBeenNthCalledWith(1, undefined);
+    expect(transformResponse).toHaveBeenNthCalledWith(1, undefined, undefined);
 
     // 错误处理函数调用 1 次，即请求失败 1 次
     expect(errorHandler).toHaveBeenCalledTimes(1);
@@ -731,15 +731,7 @@ describe('mutate endpoint', () => {
         endpoints: (builder) => ({
           getStore: builder.query<object>({ query: '/store' }),
           updateStore: builder.mutate<void, void, object>({ query: '/store' }),
-          updateError: builder.mutate<void, void, object>({
-            query: '/error',
-            transformResponse: (data) => {
-              if (data === undefined) {
-                throw new Error('not found');
-              }
-              return data;
-            },
-          }),
+          updateError: builder.mutate<void, void, object>({ query: '/error' }),
         }),
       });
 
@@ -750,6 +742,12 @@ describe('mutate endpoint', () => {
         autoMutate: get.mutate,
       });
       const error = useUpdateErrorMutate(undefined, {
+        transformResponse: (data) => {
+          if (data === undefined) {
+            throw new Error('not found');
+          }
+          return data;
+        },
         autoRefresh: get.refresh,
         autoMutate: get.mutate,
       });
