@@ -63,15 +63,15 @@ const createApi: CreateApi = (config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return useRequest(async () => {
+          return useRequest(async (params) => {
             const axiosConfig =
               typeof definition.query === 'function'
-                ? definition.query(request)
+                ? definition.query(request, params)
                 : typeof definition.query === 'object'
                 ? definition.query
-                : { url: definition.query, params: request };
+                : { url: definition.query, params: { ...request, ...params } };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data, request);
+            return transformResponse(data, request, params);
           }, finalOptions);
         };
 
@@ -96,16 +96,14 @@ const createApi: CreateApi = (config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return useAntdTable(async (params) => {
+          return useAntdTable(async (...args) => {
+            const params = { ...args[0], ...args[1] };
             const axiosConfig =
               typeof definition.query === 'function'
                 ? definition.query(request, params)
                 : typeof definition.query === 'object'
                 ? definition.query
-                : {
-                    url: definition.query,
-                    params: { ...request, ...params },
-                  };
+                : { url: definition.query, params: { ...request, ...params } };
             const { data } = await instance.request(axiosConfig);
             return transformResponse(data, request, params);
           }, finalOptions);
@@ -132,16 +130,14 @@ const createApi: CreateApi = (config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return usePagination(async (params) => {
+          return usePagination(async (...args) => {
+            const params = { ...args[0], ...args[1] };
             const axiosConfig =
               typeof definition.query === 'function'
                 ? definition.query(request, params)
                 : typeof definition.query === 'object'
                 ? definition.query
-                : {
-                    url: definition.query,
-                    params: { ...request, ...params },
-                  };
+                : { url: definition.query, params: { ...request, ...params } };
             const { data } = await instance.request(axiosConfig);
             return transformResponse(data, request, params);
           }, finalOptions);
