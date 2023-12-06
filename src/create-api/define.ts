@@ -35,7 +35,7 @@ export interface BaseEndpointDefinition<Request, Params> {
  * 查询接口选项
  */
 export interface QueryOptions<Response, Request, Params>
-  extends Options<Response, [Params]> {
+  extends Options<Response, Params extends void ? [] : [Params]> {
   transformResponse?: TransformResponse<Response, Request, Params>;
 }
 
@@ -62,7 +62,7 @@ export type QueryEndpoint<Definition> =
     ? (
         request: Request,
         options?: QueryOptions<Response, Request, Params>,
-      ) => Result<Response, [Params]>
+      ) => Result<Response, Params extends void ? [] : [Params]>
     : never;
 
 /**
@@ -177,7 +177,7 @@ export type PaginationQueryEndpoint<Definition> =
  * 修改接口选项
  */
 export interface MutateOptions<Response, Request, Params>
-  extends Options<Response, [Params]> {
+  extends Options<Response, Params extends void ? [] : [Params]> {
   transformResponse?: TransformResponse<Response, Request, Params>;
   autoRefresh?: () => void;
   autoMutate?: (updater: (data?: Params) => Params | undefined) => void;
@@ -206,7 +206,7 @@ export type MutateEndpoint<Definition> =
     ? (
         request: Request,
         options?: MutateOptions<Response, Request, Params>,
-      ) => Result<Response, [Params]>
+      ) => Result<Response, Params extends void ? [] : [Params]>
     : never;
 
 /**

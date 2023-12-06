@@ -62,6 +62,9 @@ jest.mock('axios', () => ({
               ) {
                 result = result.sort((a, b) => b.id - a.id);
               }
+              if (params.factor) {
+                result = result.filter((item) => item.id % params.factor === 0);
+              }
               return {
                 data: {
                   total: result.length,
@@ -545,12 +548,15 @@ describe('pagination query endpoint', () => {
   test('default params', async () => {
     const { useGetListPaginationQuery } = createApi({
       endpoints: (builder) => ({
-        getList: builder.paginationQuery<{
-          total: number;
-          list: { id: number }[];
-        }>({
+        getList: builder.paginationQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { factor: number }
+        >({
           query: (_, params) => ({ url: '/list', params }),
-          options: { defaultParams: [{ current: 2, pageSize: 8 }] },
+          options: {
+            defaultParams: [{ current: 2, pageSize: 8 }, { factor: 3 }],
+          },
         }),
       }),
     });
@@ -564,8 +570,8 @@ describe('pagination query endpoint', () => {
 
     // 请求成功有数据
     expect(result.current.data).toEqual({
-      total: 100,
-      list: Array.from({ length: 8 }).map((_, id) => ({ id: id + 8 })),
+      total: 34,
+      list: Array.from({ length: 8 }).map((_, id) => ({ id: (id + 8) * 3 })),
     });
   });
 

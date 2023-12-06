@@ -63,7 +63,7 @@ const createApi: CreateApi = (config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return useRequest(async (params) => {
+          return useRequest(async (...[params]) => {
             const axiosConfig =
               typeof definition.query === 'function'
                 ? definition.query(request, params)
@@ -96,8 +96,8 @@ const createApi: CreateApi = (config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return useAntdTable(async (...args) => {
-            const params = { ...args[0], ...args[1] };
+          return useAntdTable(async (...[paginationData, formData]) => {
+            const params = { ...paginationData, ...formData };
             const axiosConfig =
               typeof definition.query === 'function'
                 ? definition.query(request, params)
@@ -130,8 +130,8 @@ const createApi: CreateApi = (config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return usePagination(async (...args) => {
-            const params = { ...args[0], ...args[1] };
+          return usePagination(async (...[paginationData, formData]) => {
+            const params = { ...paginationData, ...formData };
             const axiosConfig =
               typeof definition.query === 'function'
                 ? definition.query(request, params)
@@ -165,7 +165,7 @@ const createApi: CreateApi = (config) => {
             config.transformResponse ??
             ((data) => data);
 
-          const result = useRequest(async (params) => {
+          const result = useRequest(async (...[params]) => {
             const axiosConfig =
               typeof definition.query === 'function'
                 ? definition.query(request, params)
