@@ -62,6 +62,9 @@ jest.mock('axios', () => ({
               ) {
                 result = result.sort((a, b) => b.id - a.id);
               }
+              if (params.factor) {
+                result = result.filter((item) => item.id % params.factor === 0);
+              }
               return {
                 data: {
                   total: result.length,
@@ -128,7 +131,7 @@ describe('query endpoint', () => {
 
     // 请求函数调用 1 次，即请求发送 1 次
     expect(query).toHaveBeenCalledTimes(1);
-    expect(query).toHaveBeenNthCalledWith(1, { key: 'hello' });
+    expect(query).toHaveBeenNthCalledWith(1, { key: 'hello' }, undefined);
 
     // 选项函数调用 2 次，即组件渲染 2 次
     expect(options).toHaveBeenCalledTimes(2);
@@ -156,7 +159,7 @@ describe('query endpoint', () => {
 
     // 请求函数又调用 1 次，即请求又发送 1 次
     expect(query).toHaveBeenCalledTimes(2);
-    expect(query).toHaveBeenNthCalledWith(2, { key: 'good' });
+    expect(query).toHaveBeenNthCalledWith(2, { key: 'good' }, undefined);
 
     // 选项函数又调用 2 次，即组件又渲染 2 次
     expect(options).toHaveBeenCalledTimes(5);
@@ -223,7 +226,12 @@ describe('query endpoint', () => {
 
     // 响应转换函数调用 1 次，即请求响应 1 次
     expect(transformResponse).toHaveBeenCalledTimes(1);
-    expect(transformResponse).toHaveBeenNthCalledWith(1, undefined, undefined);
+    expect(transformResponse).toHaveBeenNthCalledWith(
+      1,
+      undefined,
+      undefined,
+      undefined,
+    );
 
     // 错误处理函数调用 1 次，即请求失败 1 次
     expect(errorHandler).toHaveBeenCalledTimes(1);
@@ -243,11 +251,9 @@ describe('table query endpoint', () => {
   test('simple table query', async () => {
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
-        getList: builder.tableQuery<
-          { total: number; list: { id: number }[] },
-          void,
-          { current: number; pageSize: number }
-        >({ query: '/list' }),
+        getList: builder.tableQuery<{ total: number; list: { id: number }[] }>({
+          query: '/list',
+        }),
       }),
     });
 
@@ -326,11 +332,9 @@ describe('table query endpoint', () => {
   test('filters', async () => {
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
-        getList: builder.tableQuery<
-          { total: number; list: { id: number }[] },
-          void,
-          { current: number; pageSize: number }
-        >({ query: (_, params) => ({ url: '/list', params }) }),
+        getList: builder.tableQuery<{ total: number; list: { id: number }[] }>({
+          query: (_, params) => ({ url: '/list', params }),
+        }),
       }),
     });
 
@@ -377,11 +381,9 @@ describe('table query endpoint', () => {
   test('sorter', async () => {
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
-        getList: builder.tableQuery<
-          { total: number; list: { id: number }[] },
-          void,
-          { current: number; pageSize: number }
-        >({ query: '/list' }),
+        getList: builder.tableQuery<{ total: number; list: { id: number }[] }>({
+          query: '/list',
+        }),
       }),
     });
 
@@ -423,8 +425,7 @@ describe('table query endpoint', () => {
       endpoints: (builder) => ({
         getList: builder.tableQuery<
           { total: number; list: { id: number }[] },
-          number,
-          { current: number; pageSize: number }
+          number
         >({
           query: { url: '/list', params: { current: 1, pageSize: 10 } },
           options: (request) => ({ pollingInterval: request }),
@@ -473,11 +474,10 @@ describe('pagination query endpoint', () => {
   test('simple pagination query', async () => {
     const { useGetListPaginationQuery } = createApi({
       endpoints: (builder) => ({
-        getList: builder.paginationQuery<
-          { total: number; list: { id: number }[] },
-          void,
-          { current: number; pageSize: number }
-        >({ query: '/list' }),
+        getList: builder.paginationQuery<{
+          total: number;
+          list: { id: number }[];
+        }>({ query: '/list' }),
       }),
     });
 
@@ -551,10 +551,12 @@ describe('pagination query endpoint', () => {
         getList: builder.paginationQuery<
           { total: number; list: { id: number }[] },
           void,
-          { current: number; pageSize: number }
+          { factor: number }
         >({
           query: (_, params) => ({ url: '/list', params }),
-          options: { defaultParams: [{ current: 2, pageSize: 8 }] },
+          options: {
+            defaultParams: [{ current: 2, pageSize: 8 }, { factor: 3 }],
+          },
         }),
       }),
     });
@@ -568,8 +570,8 @@ describe('pagination query endpoint', () => {
 
     // 请求成功有数据
     expect(result.current.data).toEqual({
-      total: 100,
-      list: Array.from({ length: 8 }).map((_, id) => ({ id: id + 8 })),
+      total: 34,
+      list: Array.from({ length: 8 }).map((_, id) => ({ id: (id + 8) * 3 })),
     });
   });
 
@@ -578,8 +580,7 @@ describe('pagination query endpoint', () => {
       endpoints: (builder) => ({
         getList: builder.paginationQuery<
           { total: number; list: { id: number }[] },
-          number,
-          { current: number; pageSize: number }
+          number
         >({
           query: { url: '/list', params: { current: 1, pageSize: 10 } },
           options: (request) => ({ pollingInterval: request }),

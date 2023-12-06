@@ -16,18 +16,14 @@ import type { AxiosRequestConfig } from 'axios';
 /**
  * 响应转换函数
  */
-export interface TransformResponse<
-  Response = void,
-  Request = void,
-  Params = void,
-> {
+export interface TransformResponse<Response, Request, Params> {
   (data: any, request: Request, params: Params): Response;
 }
 
 /**
  * 基础接口定义
  */
-export interface BaseEndpointDefinition<Request = void, Params = void> {
+export interface BaseEndpointDefinition<Request, Params> {
   query:
     | string
     | AxiosRequestConfig
@@ -38,31 +34,35 @@ export interface BaseEndpointDefinition<Request = void, Params = void> {
 /**
  * 查询接口选项
  */
-export interface QueryOptions<Response, Request = void>
-  extends Options<Response, []> {
-  transformResponse?: TransformResponse<Response, Request>;
+export interface QueryOptions<Response, Request, Params>
+  extends Options<Response, Params extends void ? [] : [Params]> {
+  transformResponse?: TransformResponse<Response, Request, Params>;
 }
 
 /**
  * 查询接口定义
  */
-export interface QueryEndpointDefinition<Response, Request = void>
-  extends BaseEndpointDefinition<Request> {
+export interface QueryEndpointDefinition<Response, Request, Params>
+  extends BaseEndpointDefinition<Request, Params> {
   type: 'query';
   options?:
-    | QueryOptions<Response, Request>
-    | ((request: Request) => QueryOptions<Response, Request>);
+    | QueryOptions<Response, Request, Params>
+    | ((request: Request) => QueryOptions<Response, Request, Params>);
 }
 
 /**
  * 查询接口
  */
 export type QueryEndpoint<Definition> =
-  Definition extends QueryEndpointDefinition<infer Response, infer Request>
+  Definition extends QueryEndpointDefinition<
+    infer Response,
+    infer Request,
+    infer Params
+  >
     ? (
         request: Request,
-        options?: QueryOptions<Response, Request>,
-      ) => Result<Response, []>
+        options?: QueryOptions<Response, Request, Params>,
+      ) => Result<Response, Params extends void ? [] : [Params]>
     : never;
 
 /**
@@ -71,9 +71,16 @@ export type QueryEndpoint<Definition> =
 export interface TableQueryOptions<
   Response extends TableData,
   Request,
-  Params extends TableParams[0],
-> extends AntdTableOptions<Response, [Params]> {
-  transformResponse?: TransformResponse<Response, Request, Params>;
+  Params extends void | object,
+> extends AntdTableOptions<
+    Response,
+    Params extends void ? [TableParams[0]] : [TableParams[0], Params]
+  > {
+  transformResponse?: TransformResponse<
+    Response,
+    Request,
+    Params extends void ? TableParams[0] : TableParams[0] & Params
+  >;
 }
 
 /**
@@ -82,8 +89,11 @@ export interface TableQueryOptions<
 export interface TableQueryEndpointDefinition<
   Response extends TableData,
   Request,
-  Params extends TableParams[0],
-> extends BaseEndpointDefinition<Request, Params> {
+  Params extends void | object,
+> extends BaseEndpointDefinition<
+    Request,
+    Params extends void ? TableParams[0] : TableParams[0] & Params
+  > {
   type: 'tableQuery';
   options?:
     | TableQueryOptions<Response, Request, Params>
@@ -102,7 +112,10 @@ export type TableQueryEndpoint<Definition> =
     ? (
         request: Request,
         options?: TableQueryOptions<Response, Request, Params>,
-      ) => AntdTableResult<Response, [Params]>
+      ) => AntdTableResult<
+        Response,
+        Params extends void ? [TableParams[0]] : [TableParams[0], Params]
+      >
     : never;
 
 /**
@@ -111,9 +124,16 @@ export type TableQueryEndpoint<Definition> =
 export interface PaginationQueryOptions<
   Response extends PaginationData,
   Request,
-  Params extends PaginationParams[0],
-> extends PaginationOptions<Response, [Params]> {
-  transformResponse?: TransformResponse<Response, Request, Params>;
+  Params extends void | object,
+> extends PaginationOptions<
+    Response,
+    Params extends void ? [PaginationParams[0]] : [PaginationParams[0], Params]
+  > {
+  transformResponse?: TransformResponse<
+    Response,
+    Request,
+    Params extends void ? PaginationParams[0] : PaginationParams[0] & Params
+  >;
 }
 
 /**
@@ -122,8 +142,11 @@ export interface PaginationQueryOptions<
 export interface PaginationQueryEndpointDefinition<
   Response extends PaginationData,
   Request,
-  Params extends PaginationParams[0],
-> extends BaseEndpointDefinition<Request, Params> {
+  Params extends void | object,
+> extends BaseEndpointDefinition<
+    Request,
+    Params extends void ? PaginationParams[0] : PaginationParams[0] & Params
+  > {
   type: 'paginationQuery';
   options?:
     | PaginationQueryOptions<Response, Request, Params>
@@ -142,14 +165,19 @@ export type PaginationQueryEndpoint<Definition> =
     ? (
         request: Request,
         options?: PaginationQueryOptions<Response, Request, Params>,
-      ) => PaginationResult<Response, [Params]>
+      ) => PaginationResult<
+        Response,
+        Params extends void
+          ? [PaginationParams[0]]
+          : [PaginationParams[0], Params]
+      >
     : never;
 
 /**
  * 修改接口选项
  */
-export interface MutateOptions<Response = void, Request = void, Params = void>
-  extends Options<Response, [Params]> {
+export interface MutateOptions<Response, Request, Params>
+  extends Options<Response, Params extends void ? [] : [Params]> {
   transformResponse?: TransformResponse<Response, Request, Params>;
   autoRefresh?: () => void;
   autoMutate?: (updater: (data?: Params) => Params | undefined) => void;
@@ -158,11 +186,8 @@ export interface MutateOptions<Response = void, Request = void, Params = void>
 /**
  * 修改接口定义
  */
-export interface MutateEndpointDefinition<
-  Response = void,
-  Request = void,
-  Params = void,
-> extends BaseEndpointDefinition<Request, Params> {
+export interface MutateEndpointDefinition<Response, Request, Params>
+  extends BaseEndpointDefinition<Request, Params> {
   type: 'mutate';
   options?:
     | MutateOptions<Response, Request, Params>
@@ -181,21 +206,24 @@ export type MutateEndpoint<Definition> =
     ? (
         request: Request,
         options?: MutateOptions<Response, Request, Params>,
-      ) => Result<Response, [Params]>
+      ) => Result<Response, Params extends void ? [] : [Params]>
     : never;
 
 /**
  * 接口定义生成器
  */
 export interface EndpointDefinitionBuilder {
-  query: <Response, Request = void>(
-    definition: Omit<QueryEndpointDefinition<Response, Request>, 'type'>,
-  ) => QueryEndpointDefinition<Response, Request>;
+  query: <Response, Request = void, Params = void>(
+    definition: Omit<
+      QueryEndpointDefinition<Response, Request, Params>,
+      'type'
+    >,
+  ) => QueryEndpointDefinition<Response, Request, Params>;
 
   tableQuery: <
     Response extends TableData,
-    Request,
-    Params extends TableParams[0],
+    Request = void,
+    Params extends void | object = void,
   >(
     definition: Omit<
       TableQueryEndpointDefinition<Response, Request, Params>,
@@ -205,8 +233,8 @@ export interface EndpointDefinitionBuilder {
 
   paginationQuery: <
     Response extends PaginationData,
-    Request,
-    Params extends PaginationParams[0],
+    Request = void,
+    Params extends void | object = void,
   >(
     definition: Omit<
       PaginationQueryEndpointDefinition<Response, Request, Params>,
@@ -214,7 +242,7 @@ export interface EndpointDefinitionBuilder {
     >,
   ) => PaginationQueryEndpointDefinition<Response, Request, Params>;
 
-  mutate: <Response = void, Request = void, Params = void>(
+  mutate: <Response, Request = void, Params = void>(
     definition: Omit<
       MutateEndpointDefinition<Response, Request, Params>,
       'type'
@@ -227,7 +255,7 @@ export interface EndpointDefinitionBuilder {
  */
 export type EndpointDefinitions = Record<
   string,
-  | QueryEndpointDefinition<any, any>
+  | QueryEndpointDefinition<any, any, any>
   | TableQueryEndpointDefinition<any, any, any>
   | PaginationQueryEndpointDefinition<any, any, any>
   | MutateEndpointDefinition<any, any, any>
