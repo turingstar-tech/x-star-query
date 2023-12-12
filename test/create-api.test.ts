@@ -32,7 +32,7 @@ jest.mock('axios', () => ({
               return { data: store };
             } else if (method === 'POST') {
               store = data;
-              return { data: undefined };
+              return { data: null };
             }
             return { data: undefined };
           }
@@ -42,7 +42,7 @@ jest.mock('axios', () => ({
               return { data: store[params.key] };
             } else if (method === 'POST') {
               store[data.key] = data.value;
-              return { data: undefined };
+              return { data: null };
             }
             return { data: undefined };
           }
@@ -101,7 +101,7 @@ describe('query endpoint', () => {
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 请求成功有数据，加载完成
@@ -110,11 +110,11 @@ describe('query endpoint', () => {
   });
 
   test('refresh deps', async () => {
-    const query = jest.fn((request) => ({
+    const query = jest.fn((request: any) => ({
       url: '/store/key',
       params: request,
     }));
-    const options = jest.fn<(request: any) => any>((request) => ({
+    const options = jest.fn((request: any) => ({
       refreshDeps: [request.key],
     }));
 
@@ -141,7 +141,7 @@ describe('query endpoint', () => {
     expect(result.current.data).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(query).toHaveBeenCalledTimes(1);
@@ -169,7 +169,7 @@ describe('query endpoint', () => {
     expect(result.current.data).toBe('world!');
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(query).toHaveBeenCalledTimes(2);
@@ -184,7 +184,7 @@ describe('query endpoint', () => {
   });
 
   test('error handler', async () => {
-    const transformResponse = jest.fn((data) => {
+    const transformResponse = jest.fn((data: any) => {
       if (data === undefined) {
         throw new Error('not found');
       }
@@ -194,11 +194,11 @@ describe('query endpoint', () => {
     const useErrorHandler = jest.fn(() => errorHandler);
 
     const { useThrowErrorQuery } = createApi({
-      transformResponse,
       endpoints: (builder) => ({
         throwError: builder.query<void>({
           query: { url: '/error' },
           errorHandlerParams: { type: 'default' },
+          options: { transformResponse },
         }),
       }),
       useErrorHandler,
@@ -221,7 +221,7 @@ describe('query endpoint', () => {
     expect(result.current.error).toBe(undefined);
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 响应转换函数调用 1 次，即请求响应 1 次
@@ -235,7 +235,7 @@ describe('query endpoint', () => {
 
     // 错误处理函数调用 1 次，即请求失败 1 次
     expect(errorHandler).toHaveBeenCalledTimes(1);
-    expect(errorHandler).toHaveBeenNthCalledWith(1, new Error('not found'), []);
+    expect(errorHandler).toHaveBeenNthCalledWith(1, new Error('not found'));
 
     // 错误处理钩子又调用 1 次，即组件又渲染 1 次
     expect(useErrorHandler).toHaveBeenCalledTimes(3);
@@ -270,7 +270,7 @@ describe('table query endpoint', () => {
       pagination: { current: 1, pageSize: 10, total: 0 },
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 表格请求在第 2 次渲染时才开始加载
@@ -282,7 +282,7 @@ describe('table query endpoint', () => {
       pagination: { current: 1, pageSize: 10, total: 0 },
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 请求成功有数据
@@ -313,7 +313,7 @@ describe('table query endpoint', () => {
       pagination: { current: 7, pageSize: 16, total: 100 },
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 请求成功有新数据
@@ -342,9 +342,9 @@ describe('table query endpoint', () => {
       useGetListTableQuery(),
     );
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -362,7 +362,7 @@ describe('table query endpoint', () => {
       result.current.tableProps.onChange({ current: 2, pageSize: 8 }, { id });
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     const list = Object.values(
@@ -391,9 +391,9 @@ describe('table query endpoint', () => {
       useGetListTableQuery(),
     );
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -410,7 +410,7 @@ describe('table query endpoint', () => {
       );
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 请求成功有新数据
@@ -437,9 +437,9 @@ describe('table query endpoint', () => {
       useGetListTableQuery(3000),
     );
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -449,7 +449,7 @@ describe('table query endpoint', () => {
     expect(result.current.loading).toBe(false);
 
     act(() => {
-      jest.runOnlyPendingTimers();
+      jest.runAllTimers();
     });
 
     // 轮询加载
@@ -459,7 +459,7 @@ describe('table query endpoint', () => {
     });
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -495,7 +495,7 @@ describe('pagination query endpoint', () => {
       totalPage: 0,
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 请求成功有数据
@@ -528,7 +528,7 @@ describe('pagination query endpoint', () => {
       totalPage: 7,
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 请求成功有新数据
@@ -565,7 +565,7 @@ describe('pagination query endpoint', () => {
       useGetListPaginationQuery(),
     );
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 请求成功有数据
@@ -592,7 +592,7 @@ describe('pagination query endpoint', () => {
       useGetListPaginationQuery(3000),
     );
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -602,7 +602,7 @@ describe('pagination query endpoint', () => {
     expect(result.current.loading).toBe(false);
 
     act(() => {
-      jest.runOnlyPendingTimers();
+      jest.runAllTimers();
     });
 
     // 轮询加载
@@ -612,7 +612,7 @@ describe('pagination query endpoint', () => {
     });
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.data).toEqual({
@@ -640,7 +640,7 @@ describe('mutate endpoint', () => {
     // 初始不发送修改请求
     expect(result.current.update.loading).toBe(false);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求成功有数据
@@ -656,7 +656,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.update.loading).toBe(false);
@@ -666,7 +666,7 @@ describe('mutate endpoint', () => {
       result.current.get.runAsync();
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求成功有新数据
@@ -700,7 +700,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(false);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.get.data).toBe('night.');
@@ -711,7 +711,7 @@ describe('mutate endpoint', () => {
 
     expect(result.current.update.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.update.loading).toBe(false);
@@ -720,7 +720,7 @@ describe('mutate endpoint', () => {
       result.current.get.runAsync();
     });
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.get.data).toBe('morning.');
@@ -729,11 +729,18 @@ describe('mutate endpoint', () => {
   test('auto refresh and mutate', async () => {
     const { useGetStoreQuery, useUpdateStoreMutate, useUpdateErrorMutate } =
       createApi({
+        transformResponse: async (data) => {
+          if (data === undefined) {
+            throw new Error('not found');
+          }
+          return data;
+        },
         endpoints: (builder) => ({
           getStore: builder.query<object>({ query: '/store' }),
           updateStore: builder.mutate<void, void, object>({ query: '/store' }),
           updateError: builder.mutate<void, void, object>({ query: '/error' }),
         }),
+        useErrorHandler: () => () => {},
       });
 
     const { result, waitForNextUpdate } = renderHook(() => {
@@ -743,12 +750,6 @@ describe('mutate endpoint', () => {
         autoMutate: get.mutate,
       });
       const error = useUpdateErrorMutate(undefined, {
-        transformResponse: (data) => {
-          if (data === undefined) {
-            throw new Error('not found');
-          }
-          return data;
-        },
         autoRefresh: get.refresh,
         autoMutate: get.mutate,
       });
@@ -763,7 +764,7 @@ describe('mutate endpoint', () => {
     expect(result.current.get.data).toBe(undefined);
     expect(result.current.get.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求成功有数据
@@ -782,14 +783,14 @@ describe('mutate endpoint', () => {
     expect(result.current.get.data).toEqual({ what: 'for?' });
     expect(result.current.get.loading).toBe(false);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求自动刷新
     expect(result.current.get.data).toEqual({ what: 'for?' });
     expect(result.current.get.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求成功有新数据
@@ -807,7 +808,7 @@ describe('mutate endpoint', () => {
     expect(result.current.get.data).toEqual({ move: 'forward!' });
     expect(result.current.get.loading).toBe(false);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求自动修改回原数据，自动刷新
@@ -815,7 +816,7 @@ describe('mutate endpoint', () => {
     expect(result.current.get.loading).toBe(true);
     expect(errorHandler).toHaveBeenCalledTimes(1);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求成功有原数据
@@ -832,7 +833,7 @@ describe('mutate endpoint', () => {
     expect(result.current.get.data).toEqual({ just: 'sleep?' });
     expect(result.current.get.loading).toBe(false);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求自动刷新
@@ -840,7 +841,7 @@ describe('mutate endpoint', () => {
     expect(result.current.get.loading).toBe(true);
     expect(errorHandler).toHaveBeenCalledTimes(2);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     // 查询请求成功有新数据
@@ -872,19 +873,19 @@ describe('mutate endpoint', () => {
     // 首次加载
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.loading).toBe(false);
 
     act(() => {
-      jest.runOnlyPendingTimers();
+      jest.runAllTimers();
     });
 
     // 轮询加载
     expect(result.current.loading).toBe(true);
 
-    jest.runOnlyPendingTimers();
+    jest.runAllTimers();
     await waitForNextUpdate();
 
     expect(result.current.loading).toBe(false);
