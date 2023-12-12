@@ -11,7 +11,7 @@ import type {
   PaginationResult,
 } from 'ahooks/es/usePagination/types';
 import type { Options, Result } from 'ahooks/es/useRequest/src/types';
-import type { AxiosRequestConfig } from 'axios';
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 /**
  * 响应转换函数
@@ -265,18 +265,15 @@ export type EndpointDefinitions = Record<
  * API 配置
  */
 export interface ApiConfig<Definitions extends EndpointDefinitions> {
-  axiosConfig?: AxiosRequestConfig;
   transformResponse?: TransformResponse<any, any, any>;
   endpoints: (builder: EndpointDefinitionBuilder) => Definitions;
   useErrorHandler?: (params?: any) => (error: any) => void;
 }
 
 /**
- * 创建 API
+ * API 钩子
  */
-export type CreateApi = <Definitions extends EndpointDefinitions>(
-  config: ApiConfig<Definitions>,
-) => {
+export type ApiHooks<Definitions extends EndpointDefinitions> = {
   [key in keyof Definitions & string as `use${Capitalize<key>}${Capitalize<
     Definitions[key]['type']
   >}`]:
@@ -284,4 +281,29 @@ export type CreateApi = <Definitions extends EndpointDefinitions>(
     | TableQueryEndpoint<Definitions[key]>
     | PaginationQueryEndpoint<Definitions[key]>
     | MutateEndpoint<Definitions[key]>;
+};
+
+/**
+ * 基础 API 创建函数
+ */
+export type BaseCreateApi = <Definitions extends EndpointDefinitions>(
+  instance: AxiosInstance,
+  config: ApiConfig<Definitions>,
+) => ApiHooks<Definitions>;
+
+/**
+ * API 创建函数
+ */
+export type CreateApi = <Definitions extends EndpointDefinitions>(
+  config: ApiConfig<Definitions> & { axiosConfig?: AxiosRequestConfig },
+) => ApiHooks<Definitions>;
+
+/**
+ * 实例创建函数
+ */
+export type CreateInstance = (axiosConfig?: AxiosRequestConfig) => {
+  instance: AxiosInstance;
+  createApi: <Definitions extends EndpointDefinitions>(
+    config: ApiConfig<Definitions>,
+  ) => ApiHooks<Definitions>;
 };
