@@ -17,7 +17,7 @@ import type { AxiosInstance, AxiosRequestConfig } from 'axios';
  * 响应转换函数
  */
 export interface TransformResponse<Response, Request, Params> {
-  (data: any, request: Request, params: Params): Response;
+  (data: any, request: Request, params: Params): Response | Promise<Response>;
 }
 
 /**
@@ -267,7 +267,7 @@ export type EndpointDefinitions = Record<
 export interface ApiConfig<Definitions extends EndpointDefinitions> {
   transformResponse?: TransformResponse<any, any, any>;
   endpoints: (builder: EndpointDefinitionBuilder) => Definitions;
-  useErrorHandler?: (params?: any) => (error: any) => void;
+  useErrorHandler?: (params?: any) => (error: Error) => void;
 }
 
 /**
