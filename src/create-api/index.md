@@ -22,7 +22,7 @@ const useErrorHandler = (params?: { path: string }) => {
 
 const { useListTopContestsQuery, useGetContestNameQuery } = createApi({
   /**
-   * 全局 axios 配置
+   * 全局 Axios 配置
    */
   axiosConfig: { baseURL: 'https://api.contest.xinyoudui.com/v1' },
 
@@ -43,7 +43,7 @@ const { useListTopContestsQuery, useGetContestNameQuery } = createApi({
 
     getContestName: builder.query<string, { id: number }>({
       /**
-       * 请求 axios 配置
+       * 请求 Axios 配置
        */
       query: (request) => ({ url: '/contest/detail', params: request }),
 
@@ -115,21 +115,22 @@ export default () => {
 ### createApi
 
 ```ts
-type CreateApi = <Definitions extends EndpointDefinitions>(
-  config: ApiConfig<Definitions>,
-) => Hooks;
+interface CreateApi {
+  <Definitions extends EndpointDefinitions>(
+    config: ApiConfig<Definitions> & { axiosConfig?: AxiosRequestConfig },
+  ): ApiHooks<Definitions>;
+}
 ```
 
 `Hooks` 根据 `config.endpoints` 里的字段名和请求类型生成。例如，`config.endpoints` 里有一个 `getUser` 字段，是一个查询请求，则 `Hooks` 里会有一个 `useGetUserQuery` 字段，是一个请求 Hook。请求 Hook 的类型为 `(request: Request, options?: Options) => Result`。
 
 ### ApiConfig
 
-| 属性名            | 类型                                                  | 描述                |
-| ----------------- | ----------------------------------------------------- | ------------------- |
-| axiosConfig       | `AxiosRequestConfig`                                  | 全局 Axios 请求配置 |
-| transformResponse | `TransformResponse<any, any, any>`                    | 全局响应转换函数    |
-| endpoints         | `(builder: EndpointDefinitionBuilder) => Definitions` | 请求定义            |
-| useErrorHandler   | `(params?: any) => (error: any) => void`              | 错误处理 Hook       |
+| 属性名            | 类型                                                  | 描述             |
+| ----------------- | ----------------------------------------------------- | ---------------- |
+| transformResponse | `TransformResponse<any, any, any>`                    | 全局响应转换函数 |
+| endpoints         | `(builder: EndpointDefinitionBuilder) => Definitions` | 请求定义         |
+| useErrorHandler   | `(params?: any) => (error: any) => void`              | 错误处理 Hook    |
 
 ### TransformResponse
 
@@ -137,7 +138,7 @@ type CreateApi = <Definitions extends EndpointDefinitions>(
 
 ```ts
 interface TransformResponse<Response, Request, Params> {
-  (data: any, request: Request, params: Params): Response;
+  (data: any, request: Request, params: Params): Response | Promise<Response>;
 }
 ```
 

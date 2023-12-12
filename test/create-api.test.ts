@@ -1,11 +1,11 @@
 import { describe, expect, jest, test } from '@jest/globals';
 import { act, renderHook } from '@testing-library/react-hooks';
 import type { AxiosRequestConfig } from 'axios';
-import { createApi } from '../src';
+import createApi from '../src/create-api';
 
 jest.useFakeTimers();
 
-// 模拟 axios 实例
+// 模拟 Axios 实例
 jest.mock('axios', () => ({
   create: () => {
     // 模拟服务器数据
