@@ -1,6 +1,6 @@
 import axios from 'axios';
 import baseCreateApi from '../base-create-api';
-import { CreateInstance } from '../types';
+import type { CreateInstance } from '../types';
 
 /**
  * 实例创建函数

@@ -286,24 +286,30 @@ export type ApiHooks<Definitions extends EndpointDefinitions> = {
 /**
  * 基础 API 创建函数
  */
-export type BaseCreateApi = <Definitions extends EndpointDefinitions>(
-  instance: AxiosInstance,
-  config: ApiConfig<Definitions>,
-) => ApiHooks<Definitions>;
+export interface BaseCreateApi {
+  <Definitions extends EndpointDefinitions>(
+    instance: AxiosInstance,
+    config: ApiConfig<Definitions>,
+  ): ApiHooks<Definitions>;
+}
 
 /**
  * API 创建函数
  */
-export type CreateApi = <Definitions extends EndpointDefinitions>(
-  config: ApiConfig<Definitions> & { axiosConfig?: AxiosRequestConfig },
-) => ApiHooks<Definitions>;
+export interface CreateApi {
+  <Definitions extends EndpointDefinitions>(
+    config: ApiConfig<Definitions> & { axiosConfig?: AxiosRequestConfig },
+  ): ApiHooks<Definitions>;
+}
 
 /**
  * 实例创建函数
  */
-export type CreateInstance = (axiosConfig?: AxiosRequestConfig) => {
-  instance: AxiosInstance;
-  createApi: <Definitions extends EndpointDefinitions>(
-    config: ApiConfig<Definitions>,
-  ) => ApiHooks<Definitions>;
-};
+export interface CreateInstance {
+  (axiosConfig?: AxiosRequestConfig): {
+    instance: AxiosInstance;
+    createApi: <Definitions extends EndpointDefinitions>(
+      config: ApiConfig<Definitions>,
+    ) => ApiHooks<Definitions>;
+  };
+}
