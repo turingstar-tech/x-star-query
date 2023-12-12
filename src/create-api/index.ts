@@ -44,6 +44,21 @@ const createApi: CreateApi = (config) => {
   return Object.entries(endpoints).reduce<any>((api, [name, definition]) => {
     const hookName = `use${capitalize(name)}${capitalize(definition.type)}`;
 
+    const useErrorHandler = (options: {
+      onError?: (error: Error, params: any) => void;
+    }) => {
+      const errorHandler = config.useErrorHandler?.(
+        definition.errorHandlerParams,
+      );
+      if (errorHandler) {
+        const { onError } = options;
+        options.onError = (error, params) => {
+          onError?.(error, params);
+          errorHandler(error);
+        };
+      }
+    };
+
     switch (definition.type) {
       case 'query': {
         const useEndpoint: QueryEndpoint<typeof definition> = (
@@ -55,8 +70,9 @@ const createApi: CreateApi = (config) => {
               ? definition.options(request)
               : definition.options),
             ...options,
-            onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
+
+          useErrorHandler(finalOptions);
 
           const transformResponse =
             finalOptions.transformResponse ??
@@ -88,8 +104,9 @@ const createApi: CreateApi = (config) => {
               ? definition.options(request)
               : definition.options),
             ...options,
-            onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
+
+          useErrorHandler(finalOptions);
 
           const transformResponse =
             finalOptions.transformResponse ??
@@ -122,8 +139,9 @@ const createApi: CreateApi = (config) => {
               ? definition.options(request)
               : definition.options),
             ...options,
-            onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
+
+          useErrorHandler(finalOptions);
 
           const transformResponse =
             finalOptions.transformResponse ??
@@ -157,8 +175,9 @@ const createApi: CreateApi = (config) => {
               : definition.options),
             ...options,
             manual: true,
-            onError: config.useErrorHandler?.(definition.errorHandlerParams),
           };
+
+          useErrorHandler(finalOptions);
 
           const transformResponse =
             finalOptions.transformResponse ??
