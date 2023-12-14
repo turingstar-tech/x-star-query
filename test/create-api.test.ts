@@ -85,6 +85,12 @@ jest.mock('axios', () => ({
       },
     };
   },
+
+  CancelToken: {
+    source: () => ({
+      cancel: () => {},
+    }),
+  },
 }));
 
 describe('query endpoint', () => {
