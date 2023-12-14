@@ -226,12 +226,7 @@ describe('query endpoint', () => {
 
     // 响应转换函数调用 1 次，即请求响应 1 次
     expect(transformResponse).toHaveBeenCalledTimes(1);
-    expect(transformResponse).toHaveBeenNthCalledWith(
-      1,
-      undefined,
-      undefined,
-      undefined,
-    );
+    expect(transformResponse).toHaveBeenNthCalledWith(1, undefined);
 
     // 错误处理函数调用 1 次，即请求失败 1 次
     expect(errorHandler).toHaveBeenCalledTimes(1);
@@ -333,7 +328,7 @@ describe('table query endpoint', () => {
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.tableQuery<{ total: number; list: { id: number }[] }>({
-          query: (_, params) => ({ url: '/list', params }),
+          query: (_, pagination) => ({ url: '/list', params: pagination }),
         }),
       }),
     });
@@ -553,7 +548,10 @@ describe('pagination query endpoint', () => {
           void,
           { factor: number }
         >({
-          query: (_, params) => ({ url: '/list', params }),
+          query: (_, pagination, params) => ({
+            url: '/list',
+            params: { ...pagination, ...params },
+          }),
           options: {
             defaultParams: [{ current: 2, pageSize: 8 }, { factor: 3 }],
           },
