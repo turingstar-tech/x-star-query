@@ -82,7 +82,7 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                 ? definition.query
                 : { url: definition.query, params: { ...request, ...params } };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data, request, params);
+            return transformResponse(data);
           }, finalOptions);
         };
 
@@ -108,16 +108,18 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return useAntdTable(async (...[paginationData, formData]) => {
-            const params = { ...paginationData, ...formData };
+          return useAntdTable(async (...[pagination, params]) => {
             const axiosConfig =
               typeof definition.query === 'function'
-                ? definition.query(request, params)
+                ? definition.query(request, pagination, params)
                 : typeof definition.query === 'object'
                 ? definition.query
-                : { url: definition.query, params: { ...request, ...params } };
+                : {
+                    url: definition.query,
+                    params: { ...request, ...pagination, ...params },
+                  };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data, request, params);
+            return transformResponse(data);
           }, finalOptions);
         };
 
@@ -143,16 +145,18 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             config.transformResponse ??
             ((data) => data);
 
-          return usePagination(async (...[paginationData, formData]) => {
-            const params = { ...paginationData, ...formData };
+          return usePagination(async (...[pagination, params]) => {
             const axiosConfig =
               typeof definition.query === 'function'
-                ? definition.query(request, params)
+                ? definition.query(request, pagination, params)
                 : typeof definition.query === 'object'
                 ? definition.query
-                : { url: definition.query, params: { ...request, ...params } };
+                : {
+                    url: definition.query,
+                    params: { ...request, ...pagination, ...params },
+                  };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data, request, params);
+            return transformResponse(data);
           }, finalOptions);
         };
 
@@ -191,7 +195,7 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                     data: { ...request, ...params },
                   };
             const { data } = await instance.request(axiosConfig);
-            return transformResponse(data, request, params);
+            return transformResponse(data);
           }, finalOptions);
 
           return {

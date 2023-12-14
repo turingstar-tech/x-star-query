@@ -128,19 +128,9 @@ interface CreateApi {
 
 | 属性名            | 类型                                                  | 描述             |
 | ----------------- | ----------------------------------------------------- | ---------------- |
-| transformResponse | `TransformResponse<any, any, any>`                    | 全局响应转换函数 |
+| transformResponse | `(data: any) => any`                                  | 全局响应转换函数 |
 | endpoints         | `(builder: EndpointDefinitionBuilder) => Definitions` | 请求定义         |
 | useErrorHandler   | `(params?: any) => (error: any) => void`              | 错误处理 Hook    |
-
-### TransformResponse
-
-响应转换函数将 Axios 请求返回的数据进行转换。
-
-```ts
-interface TransformResponse<Response, Request, Params> {
-  (data: any, request: Request, params: Params): Response | Promise<Response>;
-}
-```
 
 ### EndpointDefinitionBuilder
 
@@ -155,8 +145,8 @@ interface TransformResponse<Response, Request, Params> {
 
 ### BaseEndpointDefinition
 
-| 属性名             | 类型                                                                                               | 描述             |
-| ------------------ | -------------------------------------------------------------------------------------------------- | ---------------- |
-| query              | `string \| AxiosRequestConfig \| ((request: Request, params: Params) => AxiosRequestConfig)`       | Axios 请求配置   |
-| errorHandlerParams | `any`                                                                                              | 错误处理函数参数 |
-| options            | `Options<Response, Request, Params> \| ((request: Request) => Options<Response, Request, Params>)` | 请求选项         |
+| 属性名             | 类型                                                                                            | 描述             |
+| ------------------ | ----------------------------------------------------------------------------------------------- | ---------------- |
+| query              | `string \| AxiosRequestConfig \| ((request: Request, ...params: Params) => AxiosRequestConfig)` | Axios 请求配置   |
+| errorHandlerParams | `any`                                                                                           | 错误处理函数参数 |
+| options            | `Options<Response, Params> \| ((request: Request) => Options<Response, Params>)`                | 请求选项         |
