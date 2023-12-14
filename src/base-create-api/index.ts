@@ -1,4 +1,7 @@
 import { useAntdTable, usePagination, useRequest } from 'ahooks';
+import type { CancelTokenSource } from 'axios';
+import axios from 'axios';
+import { useRef } from 'react';
 import type {
   BaseCreateApi,
   MutateEndpoint,
@@ -74,6 +77,8 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             config.transformResponse ??
             ((data) => data);
 
+          const cancelTokenRef = useRef<CancelTokenSource>();
+
           return useRequest(async (...[params]) => {
             const axiosConfig =
               typeof definition.query === 'function'
@@ -81,7 +86,12 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                 : typeof definition.query === 'object'
                 ? definition.query
                 : { url: definition.query, params: { ...request, ...params } };
-            const { data } = await instance.request(axiosConfig);
+            cancelTokenRef.current?.cancel();
+            cancelTokenRef.current = axios.CancelToken.source();
+            const { data } = await instance.request({
+              ...axiosConfig,
+              cancelToken: cancelTokenRef.current.token,
+            });
             return transformResponse(data);
           }, finalOptions);
         };
@@ -108,6 +118,8 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             config.transformResponse ??
             ((data) => data);
 
+          const cancelTokenRef = useRef<CancelTokenSource>();
+
           return useAntdTable(async (...[pagination, params]) => {
             const axiosConfig =
               typeof definition.query === 'function'
@@ -118,7 +130,12 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                     url: definition.query,
                     params: { ...request, ...pagination, ...params },
                   };
-            const { data } = await instance.request(axiosConfig);
+            cancelTokenRef.current?.cancel();
+            cancelTokenRef.current = axios.CancelToken.source();
+            const { data } = await instance.request({
+              ...axiosConfig,
+              cancelToken: cancelTokenRef.current.token,
+            });
             return transformResponse(data);
           }, finalOptions);
         };
@@ -145,6 +162,8 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             config.transformResponse ??
             ((data) => data);
 
+          const cancelTokenRef = useRef<CancelTokenSource>();
+
           return usePagination(async (...[pagination, params]) => {
             const axiosConfig =
               typeof definition.query === 'function'
@@ -155,7 +174,12 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                     url: definition.query,
                     params: { ...request, ...pagination, ...params },
                   };
-            const { data } = await instance.request(axiosConfig);
+            cancelTokenRef.current?.cancel();
+            cancelTokenRef.current = axios.CancelToken.source();
+            const { data } = await instance.request({
+              ...axiosConfig,
+              cancelToken: cancelTokenRef.current.token,
+            });
             return transformResponse(data);
           }, finalOptions);
         };
