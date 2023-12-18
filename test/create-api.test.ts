@@ -815,17 +815,10 @@ describe('mutate endpoint', () => {
     jest.runAllTimers();
     await waitForNextUpdate();
 
-    // 查询请求自动修改回原数据，自动刷新
-    expect(result.current.get.data).toEqual({ what: 'for?' });
-    expect(result.current.get.loading).toBe(true);
-    expect(errorHandler).toHaveBeenCalledTimes(1);
-
-    jest.runAllTimers();
-    await waitForNextUpdate();
-
-    // 查询请求成功有原数据
+    // 查询请求自动修改回原数据
     expect(result.current.get.data).toEqual({ what: 'for?' });
     expect(result.current.get.loading).toBe(false);
+    expect(errorHandler).toHaveBeenCalledTimes(1);
 
     // 同时发送错误请求和修改请求
     act(() => {
