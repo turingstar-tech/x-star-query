@@ -228,14 +228,14 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
               let oldData: any;
               finalOptions.autoMutate?.((data) => ((oldData = data), params));
               try {
-                return await result.runAsync(params);
+                const data = await result.runAsync(params);
+                finalOptions.autoRefresh?.();
+                return data;
               } catch (error) {
                 finalOptions.autoMutate?.((data) =>
                   data === params ? oldData : data,
                 );
                 throw error;
-              } finally {
-                finalOptions.autoRefresh?.();
               }
             },
           };
