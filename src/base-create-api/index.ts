@@ -112,6 +112,7 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
           };
 
           if (finalOptions.paramsSyncLocation) {
+            // 从URL获取初始分页和搜索参数
             const [pagination, params] = finalOptions.defaultParams ?? [];
             const { current, pageSize, ...searchParams } = Object.fromEntries(
               new URLSearchParams(location.search).entries(),
@@ -139,6 +140,7 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
 
           return useAntdTable(async (...[pagination, params]) => {
             if (finalOptions.paramsSyncLocation) {
+              // 将分页和搜索参数更新到URL
               const searchParams = new URLSearchParams();
               searchParams.append('current', `${pagination.current}`);
               searchParams.append('pageSize', `${pagination.pageSize}`);

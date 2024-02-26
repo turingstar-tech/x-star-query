@@ -471,6 +471,7 @@ describe('table query endpoint', () => {
   });
 
   test('sync search params to location', async () => {
+    // 初始URL
     history.replaceState({}, '', '?id=1');
 
     const { useGetListTableQuery } = createApi({
@@ -507,9 +508,11 @@ describe('table query endpoint', () => {
     jest.runAllTimers();
     await waitForNextUpdate();
 
+    // URL更新，请求成功有数据
     expect(window.location.search).toBe('?current=1&pageSize=10&id=1');
     expect(result.current.data).toEqual({ total: 1, list: [{ id: 1 }] });
 
+    // 修改分页和搜索参数
     act(() => {
       result.current.runAsync(
         { current: 1, pageSize: 1 },
@@ -520,6 +523,7 @@ describe('table query endpoint', () => {
     jest.runAllTimers();
     await waitForNextUpdate();
 
+    // URL更新，请求成功有新数据
     expect(window.location.search).toBe('?current=1&pageSize=1&id=2');
     expect(result.current.data).toEqual({ total: 1, list: [{ id: 2 }] });
   });
