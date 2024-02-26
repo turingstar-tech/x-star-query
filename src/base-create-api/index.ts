@@ -112,17 +112,20 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
           };
 
           if (finalOptions.paramsSyncLocation) {
-            const { current, pageSize, ...params } = Object.fromEntries(
+            const [pagination, params] = finalOptions.defaultParams ?? [];
+            const { current, pageSize, ...searchParams } = Object.fromEntries(
               new URLSearchParams(location.search).entries(),
             );
             finalOptions.defaultParams = [
               {
-                ...finalOptions.defaultParams?.[0],
-                current: +current || 1,
-                pageSize: +pageSize || 10,
+                ...pagination,
+                current: +current || pagination?.current || 1,
+                pageSize: +pageSize || pagination?.pageSize || 10,
               },
-              { ...finalOptions.defaultParams?.[1], ...params },
+              { ...params, ...searchParams },
             ];
+            finalOptions.defaultPageSize =
+              +pageSize || finalOptions.defaultPageSize || 10;
           }
 
           useErrorHandler(finalOptions);
