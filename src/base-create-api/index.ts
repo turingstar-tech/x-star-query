@@ -111,6 +111,24 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             ...options,
           };
 
+          if (finalOptions.paramsSyncLocation) {
+            // 从URL获取初始分页和搜索参数
+            const [pagination, params] = finalOptions.defaultParams ?? [];
+            const { current, pageSize, ...searchParams } = Object.fromEntries(
+              new URLSearchParams(location.search).entries(),
+            );
+            finalOptions.defaultParams = [
+              {
+                ...pagination,
+                current: +current || pagination?.current || 1,
+                pageSize: +pageSize || pagination?.pageSize || 10,
+              },
+              { ...params, ...searchParams },
+            ];
+            finalOptions.defaultPageSize =
+              +pageSize || finalOptions.defaultPageSize || 10;
+          }
+
           useErrorHandler(finalOptions);
 
           const transformResponse =
@@ -121,6 +139,18 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
           const cancelTokenRef = useRef<CancelTokenSource>();
 
           return useAntdTable(async (...[pagination, params]) => {
+            if (finalOptions.paramsSyncLocation) {
+              // 将分页和搜索参数更新到URL
+              const searchParams = new URLSearchParams();
+              searchParams.append('current', `${pagination.current}`);
+              searchParams.append('pageSize', `${pagination.pageSize}`);
+              Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                  searchParams.append(key, `${value}`);
+                }
+              });
+              history.replaceState({}, '', `?${searchParams}`);
+            }
             const axiosConfig =
               typeof definition.query === 'function'
                 ? definition.query(request, pagination, params)

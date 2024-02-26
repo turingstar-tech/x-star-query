@@ -469,6 +469,64 @@ describe('table query endpoint', () => {
     });
     expect(result.current.loading).toBe(false);
   });
+
+  test('sync search params to location', async () => {
+    // 初始URL
+    history.replaceState({}, '', '?id=1');
+
+    const { useGetListTableQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.tableQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { id: string; factor?: number }
+        >({
+          query: (_, pagination, params) => ({
+            url: '/list',
+            params: { ...pagination, filters: { id: [+params.id] } },
+          }),
+          options: { paramsSyncLocation: true },
+        }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() => {
+      let fields = {};
+      return useGetListTableQuery(undefined, {
+        form: {
+          getInternalHooks: () => {},
+          setFieldsValue: (value) => (fields = value),
+          getFieldsValue: () => fields,
+          resetFields: () => (fields = {}),
+          validateFields: async () => fields,
+        },
+      });
+    });
+
+    jest.runAllTimers();
+    await waitForNextUpdate();
+    jest.runAllTimers();
+    await waitForNextUpdate();
+
+    // URL更新，请求成功有数据
+    expect(window.location.search).toBe('?current=1&pageSize=10&id=1');
+    expect(result.current.data).toEqual({ total: 1, list: [{ id: 1 }] });
+
+    // 修改分页和搜索参数
+    act(() => {
+      result.current.runAsync(
+        { current: 1, pageSize: 1 },
+        { id: '2', factor: undefined },
+      );
+    });
+
+    jest.runAllTimers();
+    await waitForNextUpdate();
+
+    // URL更新，请求成功有新数据
+    expect(window.location.search).toBe('?current=1&pageSize=1&id=2');
+    expect(result.current.data).toEqual({ total: 1, list: [{ id: 2 }] });
+  });
 });
 
 describe('pagination query endpoint', () => {
