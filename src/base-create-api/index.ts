@@ -1,5 +1,4 @@
 import { useAntdTable, usePagination, useRequest } from 'ahooks';
-import { Params } from 'ahooks/lib/useAntdTable/types';
 import type { CancelTokenSource } from 'axios';
 import axios from 'axios';
 import { useRef } from 'react';
@@ -105,11 +104,6 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
           request,
           options,
         ) => {
-          const { current, pageSize, ...rest }: Record<string, string> = {
-            ...Object.fromEntries(
-              new URLSearchParams(window.location.search).entries(),
-            ),
-          };
           const finalOptions = {
             ...(typeof definition.options === 'function'
               ? definition.options(request)
@@ -117,18 +111,19 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             ...options,
           };
 
-          const defaultParams: [Params[0]] | [Params[0], any] | undefined =
-            finalOptions.paramsSyncRouter
-              ? [
-                  {
-                    current: +current || 1,
-                    pageSize: +pageSize || 10,
-                  },
-                  {
-                    ...rest,
-                  },
-                ]
-              : finalOptions.defaultParams;
+          if (finalOptions.paramsSyncLocation) {
+            const { current, pageSize, ...params } = Object.fromEntries(
+              new URLSearchParams(location.search).entries(),
+            );
+            finalOptions.defaultParams = [
+              {
+                ...finalOptions.defaultParams?.[0],
+                current: +current || 1,
+                pageSize: +pageSize || 10,
+              },
+              { ...finalOptions.defaultParams?.[1], ...params },
+            ];
+          }
 
           useErrorHandler(finalOptions);
 
@@ -139,43 +134,35 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
 
           const cancelTokenRef = useRef<CancelTokenSource>();
 
-          return useAntdTable(
-            async (...[pagination, params]) => {
-              if (finalOptions.paramsSyncRouter) {
-                const searchParams = new URLSearchParams();
-                console.log(params);
-                Object.entries(params).map(([key, value]) => {
-                  if (!value) return {};
-                  searchParams.append(key, value.toString());
-                  return {};
-                });
-                searchParams.append('current', pagination.current.toString());
-                searchParams.append('pageSize', pagination.pageSize.toString());
-                window.history.replaceState(
-                  {},
-                  '',
-                  `?${searchParams.toString()}`,
-                );
-              }
-              const axiosConfig =
-                typeof definition.query === 'function'
-                  ? definition.query(request, pagination, params)
-                  : typeof definition.query === 'object'
-                  ? definition.query
-                  : {
-                      url: definition.query,
-                      params: { ...request, ...pagination, ...params },
-                    };
-              cancelTokenRef.current?.cancel();
-              cancelTokenRef.current = axios.CancelToken.source();
-              const { data } = await instance.request({
-                ...axiosConfig,
-                cancelToken: cancelTokenRef.current.token,
+          return useAntdTable(async (...[pagination, params]) => {
+            if (finalOptions.paramsSyncLocation) {
+              const searchParams = new URLSearchParams();
+              searchParams.append('current', `${pagination.current}`);
+              searchParams.append('pageSize', `${pagination.pageSize}`);
+              Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                  searchParams.append(key, `${value}`);
+                }
               });
-              return transformResponse(data);
-            },
-            { ...finalOptions, defaultParams },
-          );
+              history.replaceState({}, '', `?${searchParams}`);
+            }
+            const axiosConfig =
+              typeof definition.query === 'function'
+                ? definition.query(request, pagination, params)
+                : typeof definition.query === 'object'
+                ? definition.query
+                : {
+                    url: definition.query,
+                    params: { ...request, ...pagination, ...params },
+                  };
+            cancelTokenRef.current?.cancel();
+            cancelTokenRef.current = axios.CancelToken.source();
+            const { data } = await instance.request({
+              ...axiosConfig,
+              cancelToken: cancelTokenRef.current.token,
+            });
+            return transformResponse(data);
+          }, finalOptions);
         };
 
         return { ...api, [hookName]: useEndpoint };

@@ -470,48 +470,58 @@ describe('table query endpoint', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  test('search params with router sync', async () => {
-    //window.location.replace = jest.fn();
-    jest.spyOn(window, 'location', 'get').mockImplementation(() => ({
-      ...window.location,
-      search: '?id=1',
-      replace: jest.fn(),
-    }));
+  test('sync search params to location', async () => {
+    history.replaceState({}, '', '?id=1');
 
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.tableQuery<
           { total: number; list: { id: number }[] },
           void,
-          { id?: number }
+          { id: string; factor?: number }
         >({
           query: (_, pagination, params) => ({
             url: '/list',
-            params: {
-              ...pagination,
-              ...params,
-            },
+            params: { ...pagination, filters: { id: [+params.id] } },
           }),
-          options: {
-            paramsSyncRouter: true,
-          },
+          options: { paramsSyncLocation: true },
         }),
       }),
     });
 
-    const { result, waitForNextUpdate } = renderHook(() =>
-      useGetListTableQuery(),
-    );
-
-    jest.runAllTimers();
-    await waitForNextUpdate();
-    jest.runAllTimers();
-    await waitForNextUpdate();
-
-    expect(result.current.data).toEqual({
-      total: 1,
-      list: [{ id: 1 }],
+    const { result, waitForNextUpdate } = renderHook(() => {
+      let fields = {};
+      return useGetListTableQuery(undefined, {
+        form: {
+          getInternalHooks: () => {},
+          setFieldsValue: (value) => (fields = value),
+          getFieldsValue: () => fields,
+          resetFields: () => (fields = {}),
+          validateFields: async () => fields,
+        },
+      });
     });
+
+    jest.runAllTimers();
+    await waitForNextUpdate();
+    jest.runAllTimers();
+    await waitForNextUpdate();
+
+    expect(window.location.search).toBe('?current=1&pageSize=10&id=1');
+    expect(result.current.data).toEqual({ total: 1, list: [{ id: 1 }] });
+
+    act(() => {
+      result.current.runAsync(
+        { current: 1, pageSize: 1 },
+        { id: '2', factor: undefined },
+      );
+    });
+
+    jest.runAllTimers();
+    await waitForNextUpdate();
+
+    expect(window.location.search).toBe('?current=1&pageSize=1&id=2');
+    expect(result.current.data).toEqual({ total: 1, list: [{ id: 2 }] });
   });
 });
 
