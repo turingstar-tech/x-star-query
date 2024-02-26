@@ -469,6 +469,50 @@ describe('table query endpoint', () => {
     });
     expect(result.current.loading).toBe(false);
   });
+
+  test('search params with router sync', async () => {
+    //window.location.replace = jest.fn();
+    jest.spyOn(window, 'location', 'get').mockImplementation(() => ({
+      ...window.location,
+      search: '?id=1',
+      replace: jest.fn(),
+    }));
+
+    const { useGetListTableQuery } = createApi({
+      endpoints: (builder) => ({
+        getList: builder.tableQuery<
+          { total: number; list: { id: number }[] },
+          void,
+          { id?: number }
+        >({
+          query: (_, pagination, params) => ({
+            url: '/list',
+            params: {
+              ...pagination,
+              ...params,
+            },
+          }),
+          options: {
+            paramsSyncRouter: true,
+          },
+        }),
+      }),
+    });
+
+    const { result, waitForNextUpdate } = renderHook(() =>
+      useGetListTableQuery(),
+    );
+
+    jest.runAllTimers();
+    await waitForNextUpdate();
+    jest.runAllTimers();
+    await waitForNextUpdate();
+
+    expect(result.current.data).toEqual({
+      total: 1,
+      list: [{ id: 1 }],
+    });
+  });
 });
 
 describe('pagination query endpoint', () => {

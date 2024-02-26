@@ -69,6 +69,7 @@ export interface TableQueryOptions<
     Params extends void ? [TableParams[0]] : [TableParams[0], Params]
   > {
   transformResponse?: (data: any) => Response | Promise<Response>;
+  paramsSyncRouter?: boolean;
 }
 
 /**
