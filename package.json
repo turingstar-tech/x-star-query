@@ -1,6 +1,6 @@
 {
   "name": "x-star-query",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A react query library developed by turingstar",
   "license": "MIT",
   "main": "lib/index.js",
