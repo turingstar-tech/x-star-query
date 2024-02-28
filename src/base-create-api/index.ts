@@ -149,7 +149,7 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                   searchParams.append(key, `${value}`);
                 }
               });
-              history.replaceState({}, '', `?${searchParams}`);
+              history.replaceState(history.state, '', `?${searchParams}`);
             }
             const axiosConfig =
               typeof definition.query === 'function'
