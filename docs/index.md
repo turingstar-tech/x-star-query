@@ -1,6 +1,6 @@
 ---
 hero:
-  title: library
+  title: x-star-query
   description: A react query library developed by turingstar
   actions:
     - text: Hello
@@ -18,5 +18,3 @@ features:
     emoji: 🚀
     description: Put ! description here
 ---
-
-x-star-query
