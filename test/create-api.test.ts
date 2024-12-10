@@ -429,7 +429,10 @@ describe('table query endpoint', () => {
           number
         >({
           query: { url: '/list', params: { current: 1, pageSize: 10 } },
-          options: (request) => ({ pollingInterval: request }),
+          options: (request) => ({
+            pollingInterval: request,
+            paramsSyncLocation: true,
+          }),
         }),
       }),
     });
@@ -471,19 +474,19 @@ describe('table query endpoint', () => {
   });
 
   test('sync search params to location', async () => {
-    // 初始URL
-    history.replaceState({}, '', '?id=1');
+    // 初始 URL
+    history.replaceState(null, '', '?params=%7B%22id%22%3A1%7D');
 
     const { useGetListTableQuery } = createApi({
       endpoints: (builder) => ({
         getList: builder.tableQuery<
           { total: number; list: { id: number }[] },
           void,
-          { id: string; factor?: number }
+          { id: number; factor?: number }
         >({
           query: (_, pagination, params) => ({
             url: '/list',
-            params: { ...pagination, filters: { id: [+params.id] } },
+            params: { ...pagination, filters: { id: [params.id] } },
           }),
           options: { paramsSyncLocation: true },
         }),
@@ -508,23 +511,27 @@ describe('table query endpoint', () => {
     jest.runAllTimers();
     await waitForNextUpdate();
 
-    // URL更新，请求成功有数据
-    expect(window.location.search).toBe('?current=1&pageSize=10&id=1');
+    // URL 更新，请求成功有数据
+    expect(window.location.search).toBe(
+      '?current=1&pageSize=10&params=%7B%22id%22%3A1%7D',
+    );
     expect(result.current.data).toEqual({ total: 1, list: [{ id: 1 }] });
 
     // 修改分页和搜索参数
     act(() => {
       result.current.runAsync(
         { current: 1, pageSize: 1 },
-        { id: '2', factor: undefined },
+        { id: 2, factor: undefined },
       );
     });
 
     jest.runAllTimers();
     await waitForNextUpdate();
 
-    // URL更新，请求成功有新数据
-    expect(window.location.search).toBe('?current=1&pageSize=1&id=2');
+    // URL 更新，请求成功有新数据
+    expect(window.location.search).toBe(
+      '?current=1&pageSize=1&params=%7B%22id%22%3A2%7D',
+    );
     expect(result.current.data).toEqual({ total: 1, list: [{ id: 2 }] });
   });
 });
