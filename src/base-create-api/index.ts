@@ -112,21 +112,24 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
           };
 
           if (finalOptions.paramsSyncLocation) {
-            // 从URL获取初始分页和搜索参数
-            const [pagination, params] = finalOptions.defaultParams ?? [];
-            const { current, pageSize, ...searchParams } = Object.fromEntries(
-              new URLSearchParams(location.search).entries(),
-            );
-            finalOptions.defaultParams = [
-              {
-                ...pagination,
-                current: +current || pagination?.current || 1,
-                pageSize: +pageSize || pagination?.pageSize || 10,
-              },
-              { ...params, ...searchParams },
-            ];
-            finalOptions.defaultPageSize =
-              +pageSize || finalOptions.defaultPageSize || 10;
+            // 从 URL 获取初始分页和搜索参数
+            const searchParams = new URLSearchParams(location.search);
+            let pagination = finalOptions.defaultParams?.[0] ?? {
+              current: 1,
+              pageSize: 10,
+            };
+            if (finalOptions.defaultPageSize) {
+              pagination.pageSize = finalOptions.defaultPageSize;
+            }
+            try {
+              pagination = JSON.parse(searchParams.get('pagination') ?? '');
+            } catch {}
+            let params = finalOptions.defaultParams?.[1];
+            try {
+              params = JSON.parse(searchParams.get('params') ?? '');
+            } catch {}
+            finalOptions.defaultParams = [pagination, params];
+            finalOptions.defaultPageSize = pagination.pageSize;
           }
 
           useErrorHandler(finalOptions);
@@ -140,15 +143,14 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
 
           return useAntdTable(async (...[pagination, params]) => {
             if (finalOptions.paramsSyncLocation) {
-              // 将分页和搜索参数更新到URL
-              const searchParams = new URLSearchParams();
-              searchParams.append('current', `${pagination.current}`);
-              searchParams.append('pageSize', `${pagination.pageSize}`);
-              Object.entries(params).forEach(([key, value]) => {
-                if (value !== undefined && value !== null) {
-                  searchParams.append(key, `${value}`);
-                }
-              });
+              // 将分页和搜索参数更新到 URL
+              const searchParams = new URLSearchParams(location.search);
+              searchParams.set('pagination', JSON.stringify(pagination));
+              if (params) {
+                searchParams.set('params', JSON.stringify(params));
+              } else {
+                searchParams.delete('params');
+              }
               history.replaceState(null, '', `?${searchParams}`);
             }
             const axiosConfig =
