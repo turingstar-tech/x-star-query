@@ -113,23 +113,23 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
 
           if (finalOptions.paramsSyncLocation) {
             // 从 URL 获取初始分页和搜索参数
-            let [pagination, params] = finalOptions.defaultParams ?? [];
             const searchParams = new URLSearchParams(location.search);
-            const current =
-              +(searchParams.get('current') ?? '') || pagination?.current || 1;
-            const pageSize =
-              +(searchParams.get('pageSize') ?? '') ||
-              finalOptions.defaultPageSize ||
-              pagination?.pageSize ||
-              10;
+            let pagination = finalOptions.defaultParams?.[0] ?? {
+              current: 1,
+              pageSize: 10,
+            };
+            if (finalOptions.defaultPageSize) {
+              pagination.pageSize = finalOptions.defaultPageSize;
+            }
+            try {
+              pagination = JSON.parse(searchParams.get('pagination') ?? '');
+            } catch {}
+            let params = finalOptions.defaultParams?.[1];
             try {
               params = JSON.parse(searchParams.get('params') ?? '');
             } catch {}
-            finalOptions.defaultParams = [
-              { ...pagination, current, pageSize },
-              params,
-            ];
-            finalOptions.defaultPageSize = pageSize;
+            finalOptions.defaultParams = [pagination, params];
+            finalOptions.defaultPageSize = pagination.pageSize;
           }
 
           useErrorHandler(finalOptions);
@@ -144,10 +144,13 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
           return useAntdTable(async (...[pagination, params]) => {
             if (finalOptions.paramsSyncLocation) {
               // 将分页和搜索参数更新到 URL
-              const searchParams = new URLSearchParams();
-              searchParams.append('current', `${pagination.current}`);
-              searchParams.append('pageSize', `${pagination.pageSize}`);
-              searchParams.append('params', JSON.stringify(params));
+              const searchParams = new URLSearchParams(location.search);
+              searchParams.set('pagination', JSON.stringify(pagination));
+              if (params) {
+                searchParams.set('params', JSON.stringify(params));
+              } else {
+                searchParams.delete('params');
+              }
               history.replaceState(null, '', `?${searchParams}`);
             }
             const axiosConfig =
