@@ -114,22 +114,23 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
           if (finalOptions.paramsSyncLocation) {
             // 从 URL 获取初始分页和搜索参数
             const searchParams = new URLSearchParams(location.search);
-            let pagination = finalOptions.defaultParams?.[0] ?? {
-              current: 1,
-              pageSize: 10,
-            };
-            if (finalOptions.defaultPageSize) {
-              pagination.pageSize = finalOptions.defaultPageSize;
-            }
-            try {
-              pagination = JSON.parse(searchParams.get('pagination') ?? '');
-            } catch {}
+            const pagination = finalOptions.defaultParams?.[0];
+            const current =
+              +(searchParams.get('current') ?? '') || pagination?.current || 1;
+            const pageSize =
+              +(searchParams.get('pageSize') ?? '') ||
+              finalOptions.defaultPageSize ||
+              pagination?.pageSize ||
+              10;
             let params = finalOptions.defaultParams?.[1];
             try {
               params = JSON.parse(searchParams.get('params') ?? '');
             } catch {}
-            finalOptions.defaultParams = [pagination, params];
-            finalOptions.defaultPageSize = pagination.pageSize;
+            finalOptions.defaultParams = [
+              { ...pagination, current, pageSize },
+              params,
+            ];
+            finalOptions.defaultPageSize = pageSize;
           }
 
           useErrorHandler(finalOptions);
@@ -145,7 +146,8 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             if (finalOptions.paramsSyncLocation) {
               // 将分页和搜索参数更新到 URL
               const searchParams = new URLSearchParams(location.search);
-              searchParams.set('pagination', JSON.stringify(pagination));
+              searchParams.set('current', `${pagination.current}`);
+              searchParams.set('pageSize', `${pagination.pageSize}`);
               if (params) {
                 searchParams.set('params', JSON.stringify(params));
               } else {

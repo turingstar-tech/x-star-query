@@ -488,7 +488,7 @@ describe('table query endpoint', () => {
             url: '/list',
             params: { ...pagination, filters: { id: [params.id] } },
           }),
-          options: { defaultPageSize: 5, paramsSyncLocation: true },
+          options: { paramsSyncLocation: true },
         }),
       }),
     });
@@ -513,7 +513,7 @@ describe('table query endpoint', () => {
 
     // URL 更新，请求成功有数据
     expect(window.location.search).toBe(
-      '?params=%7B%22id%22%3A1%7D&pagination=%7B%22current%22%3A1%2C%22pageSize%22%3A5%7D',
+      '?params=%7B%22id%22%3A1%7D&current=1&pageSize=10',
     );
     expect(result.current.data).toEqual({ total: 1, list: [{ id: 1 }] });
 
@@ -530,7 +530,7 @@ describe('table query endpoint', () => {
 
     // URL 更新，请求成功有新数据
     expect(window.location.search).toBe(
-      '?params=%7B%22id%22%3A2%7D&pagination=%7B%22current%22%3A1%2C%22pageSize%22%3A1%7D',
+      '?params=%7B%22id%22%3A2%7D&current=1&pageSize=1',
     );
     expect(result.current.data).toEqual({ total: 1, list: [{ id: 2 }] });
   });
