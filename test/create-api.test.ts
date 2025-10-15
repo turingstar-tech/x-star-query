@@ -97,7 +97,12 @@ describe('query endpoint', () => {
   test('simple query', async () => {
     const { useGetStoreQuery } = createApi({
       endpoints: (builder) => ({
-        getStore: builder.query<object>({ query: '/store' }),
+        getStore: builder.query<object>({
+          query: '/store',
+          options: {
+            cancelPreviousRequest: false,
+          },
+        }),
       }),
     });
 
@@ -254,6 +259,9 @@ describe('table query endpoint', () => {
       endpoints: (builder) => ({
         getList: builder.tableQuery<{ total: number; list: { id: number }[] }>({
           query: '/list',
+          options: {
+            cancelPreviousRequest: false,
+          },
         }),
       }),
     });
@@ -543,7 +551,12 @@ describe('pagination query endpoint', () => {
         getList: builder.paginationQuery<{
           total: number;
           list: { id: number }[];
-        }>({ query: '/list' }),
+        }>({
+          query: '/list',
+          options: {
+            cancelPreviousRequest: false,
+          },
+        }),
       }),
     });
 

@@ -75,21 +75,39 @@ export default () => {
   });
 
   const [id, setId] = useState(1);
+  const [isRequesting, setIsRequesting] = useState(false);
 
-  const { data: name, error } = useGetContestNameQuery(
-    { id },
-    { refreshDeps: [id] },
+  const {
+    data: name,
+    error,
+    refreshAsync: refreshContest,
+  } = useGetContestNameQuery({ id }, { refreshDeps: [id] });
+
+  useInterval(
+    () => {
+      if (id < 10) {
+        setId(id + 1);
+      }
+    },
+    isRequesting ? null : 1000,
   );
 
-  useInterval(() => {
-    if (id < 10) {
-      setId(id + 1);
+  // 连续发起五次请求
+  const sendFiveRequests = async () => {
+    setIsRequesting(true); // 停止 interval
+    for (let i = 0; i < 5; i++) {
+      console.log(`发起第 ${i + 1} 次请求`);
+      refreshContest();
+      // 每次请求之间延迟 200ms
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
-  }, 1000);
+    setIsRequesting(false); // 恢复 interval
+  };
 
   return (
     <>
       <button onClick={refreshAsync}>重新获取</button>
+
       <div
         style={{
           whiteSpace: 'nowrap',
@@ -100,6 +118,7 @@ export default () => {
         {loading ? '加载中' : JSON.stringify(data)}
       </div>
       <hr />
+      <button onClick={sendFiveRequests}>连续发起五次请求</button>
       <button onClick={() => setId(1)}>重置</button>
       <div>{id}</div>
       <div style={{ color: error ? 'red' : 'blue' }}>
@@ -150,3 +169,17 @@ interface CreateApi {
 | query              | `string \| AxiosRequestConfig \| ((request: Request, ...params: Params) => AxiosRequestConfig)` | Axios 请求配置   |
 | errorHandlerParams | `any`                                                                                           | 错误处理函数参数 |
 | options            | `Options<Response, Params> \| ((request: Request) => Options<Response, Params>)`                | 请求选项         |
+
+### 通用选项
+
+以下选项适用于 `query`、`tableQuery` 和 `paginationQuery` 类型的请求：
+
+| 属性名                | 类型                                           | 默认值 | 描述                                                                                                                |
+| --------------------- | ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
+| cancelPreviousRequest | `boolean`                                      | `true` | 是否自动取消之前的请求。当为 `true` 时，新请求发起时会自动取消未完成的旧请求；当为 `false` 时，所有请求都会执行完成 |
+| transformResponse     | `(data: any) => Response \| Promise<Response>` | -      | 响应转换函数，可覆盖全局的 `transformResponse`                                                                      |
+
+**使用场景：**
+
+- `cancelPreviousRequest: true`（默认）：适用于搜索、筛选等场景，确保只显示最新请求的结果
+- `cancelPreviousRequest: false`：适用于需要保留所有请求结果的场景，但需注意可能出现请求竞态问题

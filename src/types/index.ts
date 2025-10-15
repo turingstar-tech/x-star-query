@@ -30,6 +30,7 @@ export interface BaseEndpointDefinition<Request, Params extends any[]> {
 export interface QueryOptions<Response, Params>
   extends Options<Response, Params extends void ? [] : [Params]> {
   transformResponse?: (data: any) => Response | Promise<Response>;
+  cancelPreviousRequest?: boolean;
 }
 
 /**
@@ -70,6 +71,7 @@ export interface TableQueryOptions<
   > {
   paramsSyncLocation?: boolean;
   transformResponse?: (data: any) => Response | Promise<Response>;
+  cancelPreviousRequest?: boolean;
 }
 
 /**
@@ -118,6 +120,7 @@ export interface PaginationQueryOptions<
     Params extends void ? [PaginationParams[0]] : [PaginationParams[0], Params]
   > {
   transformResponse?: (data: any) => Response | Promise<Response>;
+  cancelPreviousRequest?: boolean;
 }
 
 /**

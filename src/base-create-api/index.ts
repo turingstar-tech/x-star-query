@@ -86,11 +86,15 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                 : typeof definition.query === 'object'
                 ? definition.query
                 : { url: definition.query, params: { ...request, ...params } };
-            cancelTokenRef.current?.cancel();
-            cancelTokenRef.current = axios.CancelToken.source();
+            if (finalOptions.cancelPreviousRequest !== false) {
+              cancelTokenRef.current?.cancel();
+              cancelTokenRef.current = axios.CancelToken.source();
+            }
             const { data } = await instance.request({
               ...axiosConfig,
-              cancelToken: cancelTokenRef.current.token,
+              ...(finalOptions.cancelPreviousRequest !== false && {
+                cancelToken: cancelTokenRef.current?.token,
+              }),
             });
             return transformResponse(data);
           }, finalOptions);
@@ -125,7 +129,9 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
             let params = finalOptions.defaultParams?.[1];
             try {
               params = JSON.parse(searchParams.get('params') ?? '');
-            } catch {}
+            } catch {
+              /* empty */
+            }
             finalOptions.defaultParams = [
               { ...pagination, current, pageSize },
               params,
@@ -164,11 +170,15 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                     url: definition.query,
                     params: { ...request, ...pagination, ...params },
                   };
-            cancelTokenRef.current?.cancel();
-            cancelTokenRef.current = axios.CancelToken.source();
+            if (finalOptions.cancelPreviousRequest !== false) {
+              cancelTokenRef.current?.cancel();
+              cancelTokenRef.current = axios.CancelToken.source();
+            }
             const { data } = await instance.request({
               ...axiosConfig,
-              cancelToken: cancelTokenRef.current.token,
+              ...(finalOptions.cancelPreviousRequest !== false && {
+                cancelToken: cancelTokenRef.current?.token,
+              }),
             });
             return transformResponse(data);
           }, finalOptions);
@@ -208,11 +218,15 @@ const baseCreateApi: BaseCreateApi = (instance, config) => {
                     url: definition.query,
                     params: { ...request, ...pagination, ...params },
                   };
-            cancelTokenRef.current?.cancel();
-            cancelTokenRef.current = axios.CancelToken.source();
+            if (finalOptions.cancelPreviousRequest !== false) {
+              cancelTokenRef.current?.cancel();
+              cancelTokenRef.current = axios.CancelToken.source();
+            }
             const { data } = await instance.request({
               ...axiosConfig,
-              cancelToken: cancelTokenRef.current.token,
+              ...(finalOptions.cancelPreviousRequest !== false && {
+                cancelToken: cancelTokenRef.current?.token,
+              }),
             });
             return transformResponse(data);
           }, finalOptions);
